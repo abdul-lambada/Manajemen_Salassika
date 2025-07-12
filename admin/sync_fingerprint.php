@@ -6,17 +6,20 @@ $active_page = "sync_fingerprint"; // Untuk menandai menu aktif di sidebar
 include '../templates/header.php';
 include '../templates/sidebar.php';
 
-// Load library fingerprint
+// Load library fingerprint dan database
 require '../includes/zklib/zklibrary.php';
+include '../includes/db.php';
 
 // Variabel untuk menyimpan pesan status
 $connection_message = '';
 $connection_class = '';
+$synchronized_data = [];
 
 // Cek apakah ada status koneksi yang tersimpan di session
 if (isset($_SESSION['connection_message'])) {
     $connection_message = $_SESSION['connection_message'];
     $connection_class = $_SESSION['connection_class'];
+    unset($_SESSION['connection_message'], $_SESSION['connection_class']); // Clear session
 }
 
 // Cek apakah tombol "Sinkronkan" ditekan
@@ -36,24 +39,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
             // Nonaktifkan perangkat sementara
             $zk->disableDevice();
 
-            // Ambil data absensi
-            $attendance = $zk->getAttendance();
+            // Ambil data pengguna dan absensi
+            $users = $zk->getUser(); // Data pengguna dari fingerprint
+            $attendance = $zk->getAttendance(); // Data absensi
 
             // Aktifkan kembali perangkat
             $zk->enableDevice();
             $zk->disconnect();
 
-            // Simpan data absensi ke variabel untuk ditampilkan
-            $synchronized_data = [];
+            // Proses data absensi dan simpan ke database
+            $processed_count = 0;
+            $error_count = 0;
+
             foreach ($attendance as $record) {
-                $synchronized_data[] = [
-                    'id_siswa' => $record['uid'], // ID siswa dari fingerprint
-                    'tanggal' => date('Y-m-d', strtotime($record['timestamp'])),
-                    'jam_masuk' => date('H:i:s', strtotime($record['timestamp']))
-                ];
+                $uid = $record[0]; // ID unik internal mesin
+                $user_id = $record[1]; // ID pengguna
+                $status = $record[2]; // Status kehadiran (0 = Masuk, 1 = Keluar)
+                $timestamp = date('Y-m-d H:i:s', strtotime($record[3])); // Format waktu
+                $verification_mode = isset($record[4]) ? $record[4] : 'Unknown';
+
+                // Ambil nama pengguna dari data pengguna
+                $user_name = isset($users[$user_id]) ? $users[$user_id][1] : 'Unknown';
+
+                // Konversi status ke teks
+                $status_text = $status == 0 ? 'Masuk' : 'Keluar';
+
+                // Cek apakah data sudah ada di database
+                $check_stmt = $conn->prepare("SELECT COUNT(*) FROM tbl_kehadiran WHERE user_id = ? AND timestamp = ?");
+                $check_stmt->execute([$user_id, $timestamp]);
+                $exists = $check_stmt->fetchColumn();
+
+                if (!$exists) {
+                    // Insert data baru ke tbl_kehadiran
+                    $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
+                    $insert_stmt->execute([$user_id, $user_name, $timestamp, $verification_mode, $status_text]);
+
+                    // Coba mapping dengan data siswa
+                    $siswa_stmt = $conn->prepare("SELECT id_siswa, nama_siswa FROM siswa WHERE nis = ? OR nisn = ?");
+                    $siswa_stmt->execute([$user_id, $user_id]);
+                    $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($siswa) {
+                        // Mapping dengan siswa berhasil
+                        $tanggal = date('Y-m-d', strtotime($timestamp));
+                        $jam_masuk = date('H:i:s', strtotime($timestamp));
+                        
+                        // Cek apakah absensi siswa sudah ada untuk hari ini
+                        $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
+                        $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
+                        
+                        if ($check_absensi->fetchColumn() == 0) {
+                            // Insert ke tabel absensi_siswa
+                            $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                            $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
+                        }
+                        
+                        $synchronized_data[] = [
+                            'id_siswa' => $siswa['id_siswa'],
+                            'nama' => $siswa['nama_siswa'],
+                            'tanggal' => $tanggal,
+                            'jam_masuk' => $jam_masuk,
+                            'tipe' => 'Siswa'
+                        ];
+                    } else {
+                        // Coba mapping dengan data guru
+                        $guru_stmt = $conn->prepare("SELECT id_guru, nama_guru FROM guru WHERE nip = ?");
+                        $guru_stmt->execute([$user_id]);
+                        $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+
+                        if ($guru) {
+                            // Mapping dengan guru berhasil
+                            $tanggal = date('Y-m-d', strtotime($timestamp));
+                            $jam_masuk = date('H:i:s', strtotime($timestamp));
+                            
+                            // Cek apakah absensi guru sudah ada untuk hari ini
+                            $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
+                            $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                            
+                            if ($check_absensi->fetchColumn() == 0) {
+                                // Insert ke tabel absensi_guru
+                                $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                                $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
+                            }
+                            
+                            $synchronized_data[] = [
+                                'id_guru' => $guru['id_guru'],
+                                'nama' => $guru['nama_guru'],
+                                'tanggal' => $tanggal,
+                                'jam_masuk' => $jam_masuk,
+                                'tipe' => 'Guru'
+                            ];
+                        } else {
+                            // Tidak ada mapping yang ditemukan
+                            $synchronized_data[] = [
+                                'user_id' => $user_id,
+                                'nama' => $user_name,
+                                'tanggal' => date('Y-m-d', strtotime($timestamp)),
+                                'jam_masuk' => date('H:i:s', strtotime($timestamp)),
+                                'tipe' => 'Tidak Dikenal'
+                            ];
+                            $error_count++;
+                        }
+                    }
+                    $processed_count++;
+                }
             }
 
-            if (empty($synchronized_data)) {
+            if ($processed_count > 0) {
+                $connection_message .= " Berhasil memproses $processed_count data absensi.";
+                if ($error_count > 0) {
+                    $connection_message .= " $error_count data tidak dapat dipetakan.";
+                }
+            } else {
                 $connection_message .= ' Tidak ada data absensi baru.';
             }
         } else {
@@ -113,17 +210,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
                                 <table class="table table-bordered mt-3">
                                     <thead>
                                         <tr>
-                                            <th>ID Siswa</th>
+                                            <th>ID</th>
+                                            <th>Nama</th>
                                             <th>Tanggal</th>
                                             <th>Jam Masuk</th>
+                                            <th>Tipe</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($synchronized_data as $data): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($data['id_siswa']); ?></td>
+                                                <td>
+                                                    <?php 
+                                                    if (isset($data['id_siswa'])) {
+                                                        echo 'S-' . htmlspecialchars($data['id_siswa']);
+                                                    } elseif (isset($data['id_guru'])) {
+                                                        echo 'G-' . htmlspecialchars($data['id_guru']);
+                                                    } else {
+                                                        echo htmlspecialchars($data['user_id']);
+                                                    }
+                                                    ?>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($data['nama']); ?></td>
                                                 <td><?php echo htmlspecialchars($data['tanggal']); ?></td>
                                                 <td><?php echo htmlspecialchars($data['jam_masuk']); ?></td>
+                                                <td>
+                                                    <span class="badge badge-<?php echo $data['tipe'] == 'Siswa' ? 'primary' : ($data['tipe'] == 'Guru' ? 'success' : 'warning'); ?>">
+                                                        <?php echo htmlspecialchars($data['tipe']); ?>
+                                                    </span>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

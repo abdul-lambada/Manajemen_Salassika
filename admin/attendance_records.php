@@ -46,8 +46,26 @@ if ($status == 'delete_success') {
 // Ambil data log kehadiran dari database
 include '../includes/db.php';
 
-// Query untuk mengambil data log kehadiran
-$stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM tbl_kehadiran ORDER BY timestamp DESC LIMIT $limit OFFSET $offset");
+// Query untuk mengambil data log kehadiran dengan informasi mapping
+$stmt = $conn->query("
+    SELECT SQL_CALC_FOUND_ROWS 
+        tk.*,
+        CASE 
+            WHEN s.nama_siswa IS NOT NULL THEN CONCAT('Siswa: ', s.nama_siswa)
+            WHEN g.nama_guru IS NOT NULL THEN CONCAT('Guru: ', g.nama_guru)
+            ELSE tk.user_name
+        END as mapped_name,
+        CASE 
+            WHEN s.id_siswa IS NOT NULL THEN 'Siswa'
+            WHEN g.id_guru IS NOT NULL THEN 'Guru'
+            ELSE 'Tidak Dikenal'
+        END as user_type
+    FROM tbl_kehadiran tk
+    LEFT JOIN siswa s ON (s.nis = tk.user_id OR s.nisn = tk.user_id)
+    LEFT JOIN guru g ON g.nip = tk.user_id
+    ORDER BY tk.timestamp DESC 
+    LIMIT $limit OFFSET $offset
+");
 $log_kehadiran = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get total number of rows and compute total pages
@@ -69,6 +87,9 @@ if (!empty($ip_address)) {
         $log_kehadiran_mesin = $zk->getAttendance(); // Data kehadiran
 
         // Simpan data kehadiran ke database
+        $processed_count = 0;
+        $mapped_count = 0;
+        
         foreach ($log_kehadiran_mesin as $row) {
             $uid = $row[0]; // ID unik internal mesin (tidak digunakan)
             $user_id = $row[1]; // ID pengguna
@@ -107,6 +128,49 @@ if (!empty($ip_address)) {
                 // Insert data baru ke database
                 $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
                 $insert_stmt->execute([$user_id, $user_name, $timestamp, $verification_mode_text, $status_text]);
+                $processed_count++;
+
+                // Coba mapping dengan data siswa
+                $siswa_stmt = $conn->prepare("SELECT id_siswa, nama_siswa FROM siswa WHERE nis = ? OR nisn = ?");
+                $siswa_stmt->execute([$user_id, $user_id]);
+                $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($siswa) {
+                    $tanggal = date('Y-m-d', strtotime($timestamp));
+                    $jam_masuk = date('H:i:s', strtotime($timestamp));
+                    
+                    // Cek apakah absensi siswa sudah ada untuk hari ini
+                    $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
+                    $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
+                    
+                    if ($check_absensi->fetchColumn() == 0) {
+                        // Insert ke tabel absensi_siswa
+                        $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                        $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
+                        $mapped_count++;
+                    }
+                } else {
+                    // Coba mapping dengan data guru
+                    $guru_stmt = $conn->prepare("SELECT id_guru, nama_guru FROM guru WHERE nip = ?");
+                    $guru_stmt->execute([$user_id]);
+                    $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($guru) {
+                        $tanggal = date('Y-m-d', strtotime($timestamp));
+                        $jam_masuk = date('H:i:s', strtotime($timestamp));
+                        
+                        // Cek apakah absensi guru sudah ada untuk hari ini
+                        $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
+                        $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                        
+                        if ($check_absensi->fetchColumn() == 0) {
+                            // Insert ke tabel absensi_guru
+                            $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                            $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
+                            $mapped_count++;
+                        }
+                    }
+                }
             }
         }
 
@@ -114,11 +178,29 @@ if (!empty($ip_address)) {
         $zk->enableDevice();
         $zk->disconnect();
 
-        $message = 'Data log kehadiran berhasil diambil dari mesin.';
+        $message = "Data log kehadiran berhasil diambil dari mesin. Diproses: $processed_count, Terpetakan: $mapped_count";
         $alert_class = 'alert-success';
 
         // Refresh data log kehadiran setelah menyimpan data baru
-        $stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM tbl_kehadiran ORDER BY timestamp DESC LIMIT $limit OFFSET $offset");
+        $stmt = $conn->query("
+            SELECT SQL_CALC_FOUND_ROWS 
+                tk.*,
+                CASE 
+                    WHEN s.nama_siswa IS NOT NULL THEN CONCAT('Siswa: ', s.nama_siswa)
+                    WHEN g.nama_guru IS NOT NULL THEN CONCAT('Guru: ', g.nama_guru)
+                    ELSE tk.user_name
+                END as mapped_name,
+                CASE 
+                    WHEN s.id_siswa IS NOT NULL THEN 'Siswa'
+                    WHEN g.id_guru IS NOT NULL THEN 'Guru'
+                    ELSE 'Tidak Dikenal'
+                END as user_type
+            FROM tbl_kehadiran tk
+            LEFT JOIN siswa s ON (s.nis = tk.user_id OR s.nisn = tk.user_id)
+            LEFT JOIN guru g ON g.nip = tk.user_id
+            ORDER BY tk.timestamp DESC 
+            LIMIT $limit OFFSET $offset
+        ");
         $log_kehadiran = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $message = 'Gagal terhubung ke mesin fingerprint: ' . $e->getMessage();
@@ -132,7 +214,7 @@ if (!empty($ip_address)) {
             <h1 class="h3 mb-0 text-gray-800">Log Kehadiran</h1>
         </nav>
         <div class="container-fluid">
-            <!-- Begin Alert SB Admin 2 -->
+            <!-- Alert Messages -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -141,9 +223,8 @@ if (!empty($ip_address)) {
                     </button>
                 </div>
             <?php endif; ?>
-            <!-- End Alert SB Admin 2 -->
 
-            <!-- Form Input IP Address -->
+            <!-- Form untuk input IP mesin fingerprint -->
             <div class="row mb-4">
                 <div class="col-lg-12">
                     <div class="card shadow mb-4">
@@ -167,6 +248,7 @@ if (!empty($ip_address)) {
                 </div>
             </div>
 
+            <!-- Tabel Log Kehadiran -->
             <div class="row">
                 <div class="col-lg-12">
                     <div class="card shadow mb-4">
@@ -174,89 +256,73 @@ if (!empty($ip_address)) {
                             <h6 class="m-0 font-weight-bold text-primary">Data Log Kehadiran</h6>
                         </div>
                         <div class="card-body">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>User ID</th>
-                                        <th>Nama</th>
-                                        <th>Tanggal & Waktu</th>
-                                        <th>Mode Verifikasi</th>
-                                        <th>Status</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!empty($log_kehadiran)): ?>
-                                        <?php foreach ($log_kehadiran as $log): ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($log['user_id']); ?></td>
-                                                <td><?php echo htmlspecialchars($log['user_name']); ?></td>
-                                                <td><?php echo htmlspecialchars($log['timestamp']); ?></td>
-                                                <td><?php echo htmlspecialchars($log['verification_mode']); ?></td>
-                                                <td><?php echo htmlspecialchars($log['status']); ?></td>
-                                                <td>
-                                                    <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-trash"> Hapus</i></a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                    <thead>
                                         <tr>
-                                            <td colspan="6" class="text-center">Tidak ada data log kehadiran.</td>
+                                            <th>No</th>
+                                            <th>User ID</th>
+                                            <th>Nama</th>
+                                            <th>Tipe</th>
+                                            <th>Tanggal & Waktu</th>
+                                            <th>Status</th>
+                                            <th>Mode Verifikasi</th>
                                         </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                            <!-- Dynamic Pagination -->
-                            <nav aria-label="Page navigation example">
-                                <ul class="pagination justify-content-end">
-                                    <?php if ($page > 1): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=<?php echo $page - 1; ?>&ip=<?php echo urlencode($ip_address); ?>">Previous</a>
-                                        </li>
-                                    <?php else: ?>
-                                        <li class="page-item disabled">
-                                            <span class="page-link">Previous</span>
-                                        </li>
-                                    <?php endif; ?>
-                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                        <li class="page-item <?php if ($page == $i) echo 'active'; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>&ip=<?php echo urlencode($ip_address); ?>"><?php echo $i; ?></a>
-                                        </li>
-                                    <?php endfor; ?>
-                                    <?php if ($page < $totalPages): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=<?php echo $page + 1; ?>&ip=<?php echo urlencode($ip_address); ?>">Next</a>
-                                        </li>
-                                    <?php else: ?>
-                                        <li class="page-item disabled">
-                                            <span class="page-link">Next</span>
-                                        </li>
-                                    <?php endif; ?>
-                                </ul>
-                            </nav>
+                                    </thead>
+                                    <tbody>
+                                        <?php 
+                                        $no = $offset + 1;
+                                        foreach ($log_kehadiran as $row): 
+                                        ?>
+                                        <tr>
+                                            <td><?php echo $no++; ?></td>
+                                            <td><?php echo htmlspecialchars($row['user_id']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['mapped_name']); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $row['user_type'] == 'Siswa' ? 'primary' : ($row['user_type'] == 'Guru' ? 'success' : 'warning'); ?>">
+                                                    <?php echo htmlspecialchars($row['user_type']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($row['timestamp']); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $row['status'] == 'Masuk' ? 'success' : 'danger'; ?>">
+                                                    <?php echo htmlspecialchars($row['status']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($row['verification_mode']); ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            <?php if ($totalPages > 1): ?>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center">
+                                        <?php if ($page > 1): ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=<?php echo $page - 1; ?>&ip=<?php echo urlencode($ip_address); ?>">Previous</a>
+                                            </li>
+                                        <?php endif; ?>
+                                        
+                                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                            <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                                <a class="page-link" href="?page=<?php echo $i; ?>&ip=<?php echo urlencode($ip_address); ?>"><?php echo $i; ?></a>
+                                            </li>
+                                        <?php endfor; ?>
+                                        
+                                        <?php if ($page < $totalPages): ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=<?php echo $page + 1; ?>&ip=<?php echo urlencode($ip_address); ?>">Next</a>
+                                            </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </nav>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Hapus Data -->
-<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Hapus Data</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <a class="btn btn-primary" href="hapus_kehadiran.php?id=<?php echo $log['id']; ?>">Hapus</a>
             </div>
         </div>
     </div>

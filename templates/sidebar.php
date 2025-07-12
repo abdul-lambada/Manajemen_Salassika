@@ -27,12 +27,24 @@ $active_page = basename($_SERVER['PHP_SELF'], '.php');
             Data Master
         </div>
         
-        <!-- Sinkronisasi Fingerprint -->
-        <li class="nav-item <?php echo $active_page === 'sync_fingerprint' ? 'active' : ''; ?>">
-            <a class="nav-link" href="sync_fingerprint.php">
-                <i class="fas fa-fw fa-sync-alt"></i>
-                <span>Sinkronisasi Fingerprint</span>
+        <!-- Fingerprint Management Dropdown -->
+        <li class="nav-item <?php echo in_array($active_page, ['sync_fingerprint', 'manage_fingerprint_users', 'test_fingerprint_connection', 'setup_cron', 'view_logs']) ? 'active' : ''; ?>">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseFingerprint" 
+               aria-expanded="<?php echo in_array($active_page, ['sync_fingerprint', 'manage_fingerprint_users', 'test_fingerprint_connection', 'setup_cron', 'view_logs']) ? 'true' : 'false'; ?>" 
+               aria-controls="collapseFingerprint">
+                <i class="fas fa-fw fa-fingerprint"></i>
+                <span>Fingerprint</span>
             </a>
+            <div id="collapseFingerprint" class="collapse <?php echo in_array($active_page, ['sync_fingerprint', 'manage_fingerprint_users', 'test_fingerprint_connection', 'setup_cron', 'view_logs']) ? 'show' : ''; ?>" 
+                 aria-labelledby="headingFingerprint" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item <?php echo $active_page === 'sync_fingerprint' ? 'active' : ''; ?>" href="sync_fingerprint.php">Sinkronisasi Data</a>
+                    <a class="collapse-item <?php echo $active_page === 'manage_fingerprint_users' ? 'active' : ''; ?>" href="manage_fingerprint_users.php">Kelola Pengguna</a>
+                    <a class="collapse-item <?php echo $active_page === 'test_fingerprint_connection' ? 'active' : ''; ?>" href="test_fingerprint_connection.php">Test Koneksi</a>
+                    <a class="collapse-item <?php echo $active_page === 'setup_cron' ? 'active' : ''; ?>" href="setup_cron.php">Setup Cron Job</a>
+                    <a class="collapse-item <?php echo $active_page === 'view_logs' ? 'active' : ''; ?>" href="view_logs.php">View Logs</a>
+                </div>
+            </div>
         </li>
         
         <!-- Data Master Dropdown -->
@@ -56,16 +68,17 @@ $active_page = basename($_SERVER['PHP_SELF'], '.php');
         </li>
         
         <!-- Absensi Dropdown -->
-        <li class="nav-item <?php echo in_array($active_page, ['attendance_records', 'laporan_guru', 'laporan_siswa']) ? 'active' : ''; ?>">
+        <li class="nav-item <?php echo in_array($active_page, ['attendance_records', 'realtime_attendance', 'laporan_guru', 'laporan_siswa']) ? 'active' : ''; ?>">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAttendance" 
-               aria-expanded="<?php echo in_array($active_page, ['attendance_records', 'laporan_guru', 'laporan_siswa']) ? 'true' : 'false'; ?>" 
+               aria-expanded="<?php echo in_array($active_page, ['attendance_records', 'realtime_attendance', 'laporan_guru', 'laporan_siswa']) ? 'true' : 'false'; ?>" 
                aria-controls="collapseAttendance">
                 <i class="fas fa-fw fa-clock"></i>
                 <span>Absensi</span>
             </a>
-            <div id="collapseAttendance" class="collapse <?php echo in_array($active_page, ['attendance_records', 'laporan_guru', 'laporan_siswa']) ? 'show' : ''; ?>" 
+            <div id="collapseAttendance" class="collapse <?php echo in_array($active_page, ['attendance_records', 'realtime_attendance', 'laporan_guru', 'laporan_siswa']) ? 'show' : ''; ?>" 
                  aria-labelledby="headingAttendance" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item <?php echo $active_page === 'realtime_attendance' ? 'active' : ''; ?>" href="realtime_attendance.php">Real-time</a>
                     <a class="collapse-item <?php echo $active_page === 'attendance_records' ? 'active' : ''; ?>" href="attendance_records.php">Log Absensi</a>
                     <a class="collapse-item <?php echo $active_page === 'laporan_guru' ? 'active' : ''; ?>" href="laporan_guru.php">Laporan Absensi Guru</a>
                     <a class="collapse-item <?php echo $active_page === 'laporan_siswa' ? 'active' : ''; ?>" href="laporan_siswa.php">Laporan Absensi Siswa</a>
