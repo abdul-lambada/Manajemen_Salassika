@@ -259,7 +259,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
                                 <h6 class="m-0 font-weight-bold text-primary">Laporan Absensi Siswa</h6>
                             </div>
                             <div class="card-body">
-                                <table class="table table-bordered">
+                                <table class="table table-bordered table-responsive-sm">
                                     <thead>
                                         <tr>
                                             <th>Tanggal</th>

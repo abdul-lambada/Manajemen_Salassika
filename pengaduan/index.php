@@ -93,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($title); ?></title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -137,18 +138,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .btn-primary:hover {
             background-color: #0b5ed7;
         }
+        .form-container {
+            animation: fadeIn 0.8s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: none; }
+        }
+        .btn-primary {
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            box-shadow: 0 4px 12px rgba(13,110,253,0.15);
+        }
+        .progress {
+            height: 6px;
+            margin-bottom: 1rem;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Header with Image -->
+    <!-- Header with Image (buat gambar responsif jika pakai <img>) -->
     <div class="header">
-        <h1>Sistem Layanan Pengaduan Sekolah</h1>
+        <h1><i class="fas fa-bullhorn me-2"></i>Sistem Layanan Pengaduan Sekolah</h1>
     </div>
     <!-- Form Container -->
     <div class="form-container">
-        <h2 class="text-primary text-center py-2">Form Layanan Pengaduan Salassika</h2>
+        <h2 class="text-primary text-center py-2"><i class="fas fa-edit me-2"></i>Form Layanan Pengaduan Salassika</h2>
         <hr>
         <form method="POST" action="" enctype="multipart/form-data" id="pengaduanForm">
+            <div class="progress" id="uploadProgress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+            </div>
             <div class="mb-3">
                 <label for="nama_pelapor" class="form-label">Nama Pelapor</label>
                 <input type="text" class="form-control" id="nama_pelapor" name="nama_pelapor" required>
@@ -170,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </select>
             </div>
             <div class="mb-3">
-                <label for="kategori" class="form-label">Kategori</label>
+                <label for="kategori" class="form-label">Kategori <i class="fas fa-tags"></i></label>
                 <select class="form-select" id="kategori" name="kategori" required>
                     <option value="saran">Saran</option>
                     <option value="kritik">Kritik</option>
@@ -196,11 +219,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label for="file_pendukung" class="form-label">Upload File Pendukung (Opsional)</label>
                 <input type="file" class="form-control" id="file_pendukung" name="file_pendukung">
             </div>
-            <button type="submit" class="btn btn-primary w-100">Kirim Pengaduan</button>
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-2"></i>Kirim Pengaduan</button>
         </form>
     </div>
     <!-- Bootstrap JS and Popper.js -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Validasi form interaktif
         document.getElementById('pengaduanForm').addEventListener('submit', function (e) {
@@ -219,6 +243,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             }
         });
+
+        // Progress bar upload file
+        const fileInput = document.getElementById('file_pendukung');
+        const form = document.getElementById('pengaduanForm');
+        const progressBar = document.getElementById('uploadProgress');
+        if (fileInput && form && progressBar) {
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    progressBar.style.display = 'block';
+                    progressBar.querySelector('.progress-bar').style.width = '0%';
+                } else {
+                    progressBar.style.display = 'none';
+                }
+            });
+            form.addEventListener('submit', function(e) {
+                if (fileInput.files.length > 0) {
+                    let percent = 0;
+                    progressBar.style.display = 'block';
+                    const interval = setInterval(function() {
+                        percent += 10;
+                        progressBar.querySelector('.progress-bar').style.width = percent + '%';
+                        if (percent >= 100) clearInterval(interval);
+                    }, 100);
+                }
+            });
+        }
+
+        // SweetAlert2 untuk notifikasi sukses/gagal
+        <?php if ($_SERVER['REQUEST_METHOD'] == 'POST'): ?>
+            <?php if (isset($stmt) && $stmt): ?>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pengaduan Berhasil Dikirim!',
+                    text: 'Terima kasih telah mengirimkan pengaduan.',
+                    timer: 3000,
+                    showConfirmButton: false
+                }).then(() => { window.location.href = 'index.php'; });
+            <?php elseif (isset($e)): ?>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: '<?php echo addslashes(htmlspecialchars($e->getMessage())); ?>',
+                });
+            <?php endif; ?>
+        <?php endif; ?>
     </script>
 </body>
 </html>

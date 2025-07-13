@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start(); // Mulai session untuk menyimpan status
 
 $title = "Sinkronisasi Fingerprint";
@@ -22,6 +24,12 @@ if (isset($_SESSION['connection_message'])) {
     unset($_SESSION['connection_message'], $_SESSION['connection_class']); // Clear session
 }
 
+// Ambil data absensi yang sudah disinkronkan dari session (jika ada)
+if (isset($_SESSION['synchronized_data'])) {
+    $synchronized_data = $_SESSION['synchronized_data'];
+    unset($_SESSION['synchronized_data']);
+}
+
 // Cek apakah tombol "Sinkronkan" ditekan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
     $device_ip = $_POST['device_ip']; // Ambil IP dari input form
@@ -42,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
             // Ambil data pengguna dan absensi
             $users = $zk->getUser(); // Data pengguna dari fingerprint
             $attendance = $zk->getAttendance(); // Data absensi
+
+            // Debug: cek apakah data absensi kosong
+            if (empty($attendance)) {
+                $connection_message .= ' Tidak ada data absensi yang diambil dari mesin fingerprint.';
+            }
 
             // Aktifkan kembali perangkat
             $zk->enableDevice();
@@ -184,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
     // Simpan status koneksi ke session
     $_SESSION['connection_message'] = $connection_message;
     $_SESSION['connection_class'] = $connection_class;
+    $_SESSION['synchronized_data'] = $synchronized_data;
 
     // Redirect ke halaman yang sama untuk menghindari resubmission form
     header("Location: " . $_SERVER['PHP_SELF']);

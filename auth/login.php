@@ -47,125 +47,89 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Management Salassika</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Tambahkan Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
+            font-family: 'Poppins', Arial, sans-serif;
             background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
             min-height: 100vh;
         }
-
         .card {
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.8s;
         }
-
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: none; }
+        }
         .form-control {
             border-radius: 10px;
-            padding: 1.2rem;
-            font-size: 0.9rem;
+            padding: 1.2rem 2.5rem 1.2rem 2.5rem;
+            font-size: 0.95rem;
+            transition: box-shadow 0.2s;
         }
-
         .form-control:focus {
             border-color: #6a11cb;
             box-shadow: 0 0 0 2px rgba(106, 17, 203, 0.2);
         }
-
+        .input-group-text {
+            background: transparent;
+            border: none;
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6a11cb;
+            font-size: 1.1rem;
+            z-index: 2;
+        }
+        .input-group {
+            position: relative;
+        }
+        .show-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6a11cb;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 2;
+        }
         .btn-primary {
             background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
             border: none;
             border-radius: 10px;
             padding: 12px 30px;
             font-weight: 600;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(106, 17, 203, 0.08);
         }
-
         .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(106, 17, 203, 0.15);
         }
-
-        .loader-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            z-index: 9999;
-        }
-
-        .loader {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .logo {
             width: 60px;
             height: 60px;
+            margin-bottom: 1rem;
         }
-
-        .loader div {
-            position: absolute;
-            border: 4px solid #6a11cb;
-            border-radius: 50%;
-            animation: loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-        }
-
-        .loader div:nth-child(1) {
-            width: 60px;
-            height: 60px;
-            animation-delay: -0.45s;
-        }
-
-        .loader div:nth-child(2) {
-            width: 50px;
-            height: 50px;
-            animation-delay: -0.3s;
-        }
-
-        .loader div:nth-child(3) {
-            width: 40px;
-            height: 40px;
-            animation-delay: -0.15s;
-        }
-
-        @keyframes loader {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-
-            100% {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
-
         .alert {
             border-radius: 10px;
             margin-bottom: 1.5rem;
             animation: fadeIn 0.5s ease-in;
         }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         @media (max-width: 576px) {
-            .card-body {
-                padding: 2rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
+            .card-body { padding: 2rem; }
+            h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -183,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="card col-lg-6 col-md-8 col-sm-10">
             <div class="card-body p-4">
                 <div class="text-center mb-4">
+                    <img src="../assets/img/logo.jpg" alt="Logo" class="logo mb-2">
                     <h1 class="text-primary fw-bold">SISTEM INFORMASI MANAGEMENT</h1>
                     <h5 class="text-primary fw-bold">SALASSIKA</h5>
                 </div>
@@ -192,14 +157,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <?php endif; ?>
 
                 <form method="POST" action="" onsubmit="showLoader()">
-                    <div class="mb-3">
-                        <input type="text" name="nip" class="form-control <?= $nipError ?>" placeholder="NIP" required>
+                    <div class="mb-3 input-group">
+                        <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                        <input type="text" name="nip" class="form-control <?= $nipError ?>" placeholder="NIP" required style="padding-left:2.5rem;">
                         <?php if (!empty($nipError)): ?>
                             <div class="invalid-feedback">NIP tidak valid.</div>
                         <?php endif; ?>
                     </div>
-                    <div class="mb-3">
-                        <input type="password" name="password" class="form-control <?= $passwordError ?>" placeholder="Password" required>
+                    <div class="mb-3 input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" name="password" id="passwordInput" class="form-control <?= $passwordError ?>" placeholder="Password" required style="padding-left:2.5rem;">
+                        <button type="button" class="show-password" onclick="togglePassword()"><i class="fas fa-eye" id="eyeIcon"></i></button>
                         <?php if (!empty($passwordError)): ?>
                             <div class="invalid-feedback">Password tidak valid.</div>
                         <?php endif; ?>
@@ -216,6 +184,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script>
         function showLoader() {
             document.getElementById('loaderOverlay').style.display = 'flex';
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         }
 
         // Sembunyikan loader jika ada error

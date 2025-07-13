@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
 $title = "Test Koneksi Fingerprint";
 $active_page = "test_fingerprint";
@@ -14,14 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_connection'])) {
         require '../includes/zklib/zklibrary.php';
         $zk = new ZKLibrary($device_ip, 4370);
         
-        // Test 1: Koneksi dasar
+        // Connect sekali saja
+        $is_connected = $zk->connect();
         $test_results['connection'] = [
             'name' => 'Koneksi Dasar',
-            'status' => $zk->connect() ? 'SUCCESS' : 'FAILED',
-            'message' => $zk->connect() ? 'Berhasil terhubung ke perangkat' : 'Gagal terhubung ke perangkat'
+            'status' => $is_connected ? 'SUCCESS' : 'FAILED',
+            'message' => $is_connected ? 'Berhasil terhubung ke perangkat' : 'Gagal terhubung ke perangkat'
         ];
         
-        if ($zk->connect()) {
+        if ($is_connected) {
             // Test 2: Ping device
             $ping_result = $zk->ping();
             $test_results['ping'] = [
