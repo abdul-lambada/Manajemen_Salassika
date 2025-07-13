@@ -102,20 +102,22 @@ $active_page = basename($_SERVER['PHP_SELF'], '.php');
         </div>
         
         <!-- Guru Menu Dropdown -->
-        <li class="nav-item <?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'laporan', 'laporan_guru']) ? 'active' : ''; ?>">
+        <li class="nav-item <?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'laporan_siswa', 'laporan_guru', 'monitor_fingerprint']) ? 'active' : ''; ?>">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseGuruMenu" 
-               aria-expanded="<?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'laporan', 'laporan_guru']) ? 'true' : 'false'; ?>" 
+               aria-expanded="<?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'laporan_siswa', 'laporan_guru', 'monitor_fingerprint']) ? 'true' : 'false'; ?>" 
                aria-controls="collapseGuruMenu">
                 <i class="fas fa-fw fa-chalkboard-teacher"></i>
                 <span>Guru Menu</span>
             </a>
-            <div id="collapseGuruMenu" class="collapse <?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'laporan_siswa', 'laporan_guru']) ? 'show' : ''; ?>" 
+            <div id="collapseGuruMenu" class="collapse <?php echo in_array($active_page, ['list_users_guru', 'log_absensi', 'absensi_siswa', 'absensi_guru', 'realtime_attendance', 'laporan_siswa', 'laporan_guru', 'monitor_fingerprint']) ? 'show' : ''; ?>" 
                  aria-labelledby="headingGuruMenu" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?php echo $active_page === 'list_users_guru' ? 'active' : ''; ?>" href="list_users_guru.php">Data Pengguna</a>
                     <a class="collapse-item <?php echo $active_page === 'log_absensi' ? 'active' : ''; ?>" href="log_absensi.php">Log Absensi</a>
                     <a class="collapse-item <?php echo $active_page === 'absensi_siswa' ? 'active' : ''; ?>" href="absensi_siswa.php">Absensi Siswa</a>
                     <a class="collapse-item <?php echo $active_page === 'absensi_guru' ? 'active' : ''; ?>" href="absensi_guru.php">Absensi Guru</a>
+                    <a class="collapse-item <?php echo $active_page === 'monitor_fingerprint' ? 'active' : ''; ?>" href="monitor_fingerprint.php">Monitor Fingerprint</a>
+                    <a class="collapse-item <?php echo $active_page === 'realtime_attendance' ? 'active' : ''; ?>" href="realtime_attendance.php">Real-time Attendance</a>
                     <a class="collapse-item <?php echo $active_page === 'laporan_siswa' ? 'active' : ''; ?>" href="laporan_siswa.php">Laporan Absensi Siswa</a>
                     <a class="collapse-item <?php echo $active_page === 'laporan_guru' ? 'active' : ''; ?>" href="laporan_guru.php">Laporan Absensi Guru</a>
                 </div>

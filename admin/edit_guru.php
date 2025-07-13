@@ -8,38 +8,48 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 }
 
 $id_guru = $_GET['id'];
-$stmt = $conn->prepare("SELECT * FROM Guru WHERE id_guru = :id_guru");
+$stmt = $conn->prepare("SELECT * FROM guru WHERE id_guru = :id_guru");
 $stmt->bindParam(':id_guru', $id_guru);
 $stmt->execute();
 $guru = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Ambil data dari form
-    $nama_guru = $_POST['nama_guru'];
-    $nip = $_POST['nip'];
-    $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : $guru['password']; // Update password jika diisi
-    $jenis_kelamin = $_POST['jenis_kelamin'];
-    $tanggal_lahir = $_POST['tanggal_lahir'];
-    $alamat = $_POST['alamat'];
+    try {
+        $conn->beginTransaction();
+        
+        // Ambil data dari form
+        $nama_guru = $_POST['nama_guru'];
+        $nip = $_POST['nip'];
+        $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : $guru['password'];
+        $jenis_kelamin = $_POST['jenis_kelamin'];
+        $tanggal_lahir = $_POST['tanggal_lahir'];
+        $alamat = $_POST['alamat'];
 
-    // Update data di database
-    $stmt = $conn->prepare("UPDATE Guru SET nama_guru = :nama_guru, nip = :nip, password = :password, jenis_kelamin = :jenis_kelamin, tanggal_lahir = :tanggal_lahir, alamat = :alamat WHERE id_guru = :id_guru");
-    $stmt->bindParam(':nama_guru', $nama_guru);
-    $stmt->bindParam(':nip', $nip);
-    $stmt->bindParam(':password', $password);
-    $stmt->bindParam(':jenis_kelamin', $jenis_kelamin);
-    $stmt->bindParam(':tanggal_lahir', $tanggal_lahir);
-    $stmt->bindParam(':alamat', $alamat);
-    $stmt->bindParam(':id_guru', $id_guru);
+        // Validasi NIP unik
+        $check_nip = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ? AND id_guru != ?");
+        $check_nip->execute([$nip, $id_guru]);
+        
+        if ($check_nip->rowCount() > 0) {
+            throw new Exception("NIP sudah digunakan oleh guru lain");
+        }
 
-    if ($stmt->execute()) {
-       // Redirect ke halaman list guru dengan status success
-       header("Location: list_guru.php?status=edit_success");
-       exit();
-    } else {
-        // Redirect ke halaman list guru dengan status error
-        header("Location: list_guru.php?status=error");
+        // Update data di tabel guru
+        $stmt = $conn->prepare("UPDATE guru SET nama_guru = ?, nip = ?, password = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id_guru = ?");
+        $stmt->execute([$nama_guru, $nip, $password, $jenis_kelamin, $tanggal_lahir, $alamat, $id_guru]);
+
+        // Update data di tabel users jika ada user_id
+        if (!empty($guru['user_id'])) {
+            $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ? WHERE id = ?");
+            $stmt_user->execute([$nama_guru, $password, $nip, $guru['user_id']]);
+        }
+
+        $conn->commit();
+        header("Location: list_guru.php?status=edit_success");
         exit();
+        
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $error_message = $e->getMessage();
     }
 }
 ?>
@@ -69,6 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <h6 class="m-0 font-weight-bold text-primary">Form Edit Guru</h6>
                             </div>
                             <div class="card-body">
+                                <?php if (!empty($error_message)): ?>
+                                    <div class="alert alert-danger">
+                                        <?php echo htmlspecialchars($error_message); ?>
+                                    </div>
+                                <?php endif; ?>
+                                
                                 <form method="POST" action="">
                                     <label>Nama Guru:</label>
                                     <input type="text" name="nama_guru" class="form-control" value="<?php echo $guru['nama_guru']; ?>" required><br>

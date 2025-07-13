@@ -8,7 +8,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 }
 
 // Ambil daftar kelas untuk dropdown
-$stmt_jurusan = $conn->query("SELECT * FROM Jurusan");
+$stmt_jurusan = $conn->query("SELECT * FROM jurusan");
 $jurusan_list = $stmt_jurusan->fetchAll(PDO::FETCH_ASSOC);
 
 // Proses tambah data kelas
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (!empty($nama_kelas) && !empty($id_jurusan)) {
         try {
-            $stmt = $conn->prepare("INSERT INTO Kelas (nama_kelas, id_jurusan) VALUES (:nama_kelas, :id_jurusan)");
+            $stmt = $conn->prepare("INSERT INTO kelas (nama_kelas, id_jurusan) VALUES (:nama_kelas, :id_jurusan)");
             $stmt->bindParam(':nama_kelas', $nama_kelas);
             $stmt->bindParam(':id_jurusan', $id_jurusan);
             $stmt->execute();

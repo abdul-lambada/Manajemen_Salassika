@@ -11,7 +11,7 @@ $offset = ($page - 1) * $limit;
 
 // Ambil data Jurusan dengan pagination
 include '../includes/db.php';
-$stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM Jurusan LIMIT $limit OFFSET $offset");
+$stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM jurusan LIMIT $limit OFFSET $offset");
 $jurusan_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get total number of rows and compute total pages

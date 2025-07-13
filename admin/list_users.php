@@ -19,15 +19,8 @@ $users = $zk->getUser();
 
 // Koneksi ke database
 include '../includes/db.php';
-// $host = 'localhost';
-// $dbname = 'absensi_sekolah';
-// $username = 'root';
-// $password = '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     // Insert data pengguna ke tabel users
     foreach ($users as $key => $user) {
         $uid = $key;
@@ -37,20 +30,14 @@ try {
         $password = $user[3];
 
         // Query untuk memeriksa apakah UID sudah ada di database
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE uid = :uid");
-        $stmt->execute(['uid' => $uid]);
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE uid = ?");
+        $stmt->execute([$uid]);
         $exists = $stmt->fetchColumn();
 
         if (!$exists) {
             // Insert data jika UID belum ada
-            $insertStmt = $pdo->prepare("INSERT INTO users (uid, id, name, role, password) VALUES (:uid, :id, :name, :role, :password)");
-            $insertStmt->execute([
-                'uid' => $uid,
-                'id' => $id,
-                'name' => $name,
-                'role' => $role,
-                'password' => $password
-            ]);
+            $insertStmt = $conn->prepare("INSERT INTO users (uid, name, role, password) VALUES (?, ?, ?, ?)");
+            $insertStmt->execute([$uid, $name, $role, $password]);
         }
     }
 } catch (PDOException $e) {
@@ -64,11 +51,11 @@ $offset = ($page - 1) * $limit;
 
 // Ambil data dari tabel users untuk ditampilkan
 try {
-    $stmt = $pdo->query("SELECT SQL_CALC_FOUND_ROWS * FROM users LIMIT $limit OFFSET $offset");
+    $stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM users LIMIT $limit OFFSET $offset");
     $dbUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get total number of rows and compute total pages
-    $total = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
+    $total = $conn->query("SELECT FOUND_ROWS()")->fetchColumn();
     $totalPages = ceil($total / $limit);
 } catch (PDOException $e) {
     echo "Database error: " . $e->getMessage();
@@ -158,11 +145,11 @@ switch ($status) {
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>UID</th>
                                         <th>ID</th>
                                         <th>Name</th>
                                         <th>Role</th>
-                                        <th>Password</th>
+                                        <th>UID</th>
+                                        <th>Created At</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -172,15 +159,43 @@ switch ($status) {
                                     foreach ($dbUsers as $user): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($no++); ?></td>
-                                            <td><?php echo htmlspecialchars($user['uid']); ?></td>
                                             <td><?php echo htmlspecialchars($user['id']); ?></td>
                                             <td><?php echo htmlspecialchars($user['name']); ?></td>
                                             <td><?php echo htmlspecialchars($user['role']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['password']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['uid']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['created_at']); ?></td>
                                             <td>
-                                                <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-trash"> Hapus</i></a>
+                                                <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal<?php echo $user['id']; ?>">
+                                                    <i class="fas fa-trash"></i> Hapus
+                                                </a>
                                             </td>
                                         </tr>
+                                        
+                                        <!-- Delete Confirmation Modal -->
+                                        <div class="modal fade" id="deleteModal<?php echo $user['id']; ?>" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Konfirmasi Hapus</h5>
+                                                        <button type="button" class="close" data-dismiss="modal">
+                                                            <span>&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Apakah Anda yakin ingin menghapus user ini?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                            Batal
+                                                        </button>
+                                                        <a href="hapus_users.php?id=<?php echo $user['id']; ?>" 
+                                                           class="btn btn-danger">
+                                                            Hapus
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>

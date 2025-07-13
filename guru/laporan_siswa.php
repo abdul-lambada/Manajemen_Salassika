@@ -27,9 +27,9 @@ $query = "
         k.nama_kelas,
         asis.status_kehadiran AS status_kehadiran,
         asis.catatan
-    FROM Absensi_Siswa asis
-    JOIN Siswa s ON asis.id_siswa = s.id_siswa
-    JOIN Kelas k ON s.id_kelas = k.id_kelas
+    FROM absensi_siswa asis
+    JOIN siswa s ON asis.id_siswa = s.id_siswa
+    JOIN kelas k ON s.id_kelas = k.id_kelas
     LEFT JOIN users u ON s.user_id = u.id
     WHERE 1=1
 ";

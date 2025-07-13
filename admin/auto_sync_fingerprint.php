@@ -73,57 +73,67 @@ try {
             $exists = $check_stmt->fetchColumn();
             
             if (!$exists) {
-                // Insert data baru ke tbl_kehadiran
-                $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
-                $insert_stmt->execute([$user_id, $user_name, $timestamp, $verification_mode, $status_text]);
+                // Cari user_id yang sesuai di tabel users berdasarkan uid
+                $user_stmt = $conn->prepare("SELECT id, name FROM users WHERE uid = ?");
+                $user_stmt->execute([$user_id]);
+                $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
                 
-                // Mapping dengan data siswa
-                $siswa_stmt = $conn->prepare("SELECT id_siswa, nama_siswa FROM siswa WHERE nis = ? OR nisn = ?");
-                $siswa_stmt->execute([$user_id, $user_id]);
-                $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($siswa) {
-                    $tanggal = date('Y-m-d', strtotime($timestamp));
-                    $jam_masuk = date('H:i:s', strtotime($timestamp));
+                if ($user) {
+                    // Insert data baru ke tbl_kehadiran dengan user_id yang benar
+                    $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
+                    $insert_stmt->execute([$user['id'], $user['name'], $timestamp, $verification_mode, $status_text]);
                     
-                    // Cek apakah absensi siswa sudah ada untuk hari ini
-                    $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
-                    $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
+                    // Mapping dengan data siswa berdasarkan user_id
+                    $siswa_stmt = $conn->prepare("SELECT id_siswa, nama_siswa FROM siswa WHERE user_id = ?");
+                    $siswa_stmt->execute([$user['id']]);
+                    $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
                     
-                    if ($check_absensi->fetchColumn() == 0) {
-                        // Insert ke tabel absensi_siswa
-                        $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
-                        $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
-                        $siswa_count++;
-                        writeLog("Absensi siswa: {$siswa['nama_siswa']} - $tanggal $jam_masuk");
-                    }
-                } else {
-                    // Mapping dengan data guru
-                    $guru_stmt = $conn->prepare("SELECT id_guru, nama_guru FROM guru WHERE nip = ?");
-                    $guru_stmt->execute([$user_id]);
-                    $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    if ($guru) {
+                    if ($siswa) {
                         $tanggal = date('Y-m-d', strtotime($timestamp));
                         $jam_masuk = date('H:i:s', strtotime($timestamp));
                         
-                        // Cek apakah absensi guru sudah ada untuk hari ini
-                        $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
-                        $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                        // Cek apakah absensi siswa sudah ada untuk hari ini
+                        $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
+                        $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
                         
                         if ($check_absensi->fetchColumn() == 0) {
-                            // Insert ke tabel absensi_guru
-                            $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
-                            $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
-                            $guru_count++;
-                            writeLog("Absensi guru: {$guru['nama_guru']} - $tanggal $jam_masuk");
+                            // Insert ke tabel absensi_siswa
+                            $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                            $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
+                            $siswa_count++;
+                            writeLog("Absensi siswa: {$siswa['nama_siswa']} - $tanggal $jam_masuk");
                         }
                     } else {
-                        $error_count++;
-                        writeLog("WARNING: User ID $user_id ($user_name) tidak dapat dipetakan");
+                        // Mapping dengan data guru berdasarkan user_id
+                        $guru_stmt = $conn->prepare("SELECT id_guru, nama_guru FROM guru WHERE user_id = ?");
+                        $guru_stmt->execute([$user['id']]);
+                        $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($guru) {
+                            $tanggal = date('Y-m-d', strtotime($timestamp));
+                            $jam_masuk = date('H:i:s', strtotime($timestamp));
+                            
+                            // Cek apakah absensi guru sudah ada untuk hari ini
+                            $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
+                            $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                            
+                            if ($check_absensi->fetchColumn() == 0) {
+                                // Insert ke tabel absensi_guru
+                                $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                                $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
+                                $guru_count++;
+                                writeLog("Absensi guru: {$guru['nama_guru']} - $tanggal $jam_masuk");
+                            }
+                        } else {
+                            $error_count++;
+                            writeLog("WARNING: User ID $user_id ({$user['name']}) tidak dapat dipetakan ke siswa atau guru");
+                        }
                     }
+                    $processed_count++;
+                } else {
+                    $error_count++;
+                    writeLog("WARNING: User ID $user_id ($user_name) tidak ditemukan di tabel users");
                 }
-                $processed_count++;
             }
         }
         

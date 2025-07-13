@@ -13,23 +13,27 @@ $stmt_kelas = $conn->prepare("SELECT id_kelas, nama_kelas FROM kelas");
 $stmt_kelas->execute();
 $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
 
-// Ambil daftar user untuk dropdown (hanya ambil name dan id)
-$stmt_users = $conn->prepare("SELECT id, name FROM users");
-$stmt_users->execute();
-$users_list = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
-
 // Proses form submit
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn->beginTransaction();
 
         // Ambil data form
-        $nis = $_POST['nis'];
+        $nisn = $_POST['nisn'];
+        $nama_siswa = $_POST['nama_siswa'];
         $jenis_kelamin = $_POST['jenis_kelamin'];
         $tanggal_lahir = $_POST['tanggal_lahir'];
         $alamat = $_POST['alamat'];
         $id_kelas = $_POST['id_kelas'];
-        $user_id = $_POST['user_id'];
+        $nis = $_POST['nis'];
+
+        // Validasi NISN unik
+        $check_nisn = $conn->prepare("SELECT id_siswa FROM siswa WHERE nisn = ?");
+        $check_nisn->execute(array($nisn));
+        
+        if ($check_nisn->rowCount() > 0) {
+            throw new Exception("NISN sudah digunakan");
+        }
 
         // Validasi NIS unik
         $check_nis = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
@@ -39,19 +43,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             throw new Exception("NIS sudah digunakan");
         }
 
+        // Insert ke tabel users terlebih dahulu
+        $password = password_hash('123456', PASSWORD_DEFAULT); // Password default
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', ?)");
+        $stmt_user->execute(array($nama_siswa, $password, $nis));
+        $user_id = $conn->lastInsertId();
+
         // Insert ke tabel siswa
         $stmt = $conn->prepare("
             INSERT INTO siswa 
-            (nis, jenis_kelamin, tanggal_lahir, alamat, id_kelas, user_id) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            (nisn, nama_siswa, jenis_kelamin, tanggal_lahir, alamat, id_kelas, nis, user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute(array(
-            $nis,
+            $nisn,
+            $nama_siswa,
             $jenis_kelamin,
             $tanggal_lahir,
             $alamat,
             $id_kelas,
+            $nis,
             $user_id
         ));
 
@@ -96,6 +108,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <form method="POST" action="">
                             <div class="form-group">
+                                <label>NISN</label>
+                                <input type="text" name="nisn" class="form-control" 
+                                       value="<?php echo isset($_POST['nisn']) ? htmlspecialchars($_POST['nisn']) : ''; ?>" 
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Siswa</label>
+                                <input type="text" name="nama_siswa" class="form-control" 
+                                       value="<?php echo isset($_POST['nama_siswa']) ? htmlspecialchars($_POST['nama_siswa']) : ''; ?>" 
+                                       required>
+                            </div>
+                            <div class="form-group">
                                 <label>NIS</label>
                                 <input type="text" name="nis" class="form-control" 
                                        value="<?php echo isset($_POST['nis']) ? htmlspecialchars($_POST['nis']) : ''; ?>" 
@@ -128,22 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <?php echo htmlspecialchars($kelas['nama_kelas']); ?>
                                         </option>
                                     <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>User</label>
-                                <select name="user_id" class="form-control" required>
-                                    <option value="">Pilih User</option>
-                                    <?php if (!empty($users_list)): ?>
-                                        <?php foreach ($users_list as $user): ?>
-                                            <option value="<?php echo $user['id']; ?>" 
-                                                <?php echo (isset($_POST['user_id']) && $_POST['user_id'] == $user['id']) ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($user['name']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <option value="" disabled>Tidak ada user tersedia</option>
-                                    <?php endif; ?>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary">Simpan</button>

@@ -14,7 +14,7 @@ if (isset($_GET['id'])) {
 
     try {
         // Query untuk menghapus data pengaduan berdasarkan ID
-        $stmt = $conn->prepare("DELETE FROM Pengaduan WHERE id_pengaduan = :id_pengaduan");
+        $stmt = $conn->prepare("DELETE FROM pengaduan WHERE id_pengaduan = :id_pengaduan");
         $stmt->bindParam(':id_pengaduan', $id_pengaduan);
         $stmt->execute();
 

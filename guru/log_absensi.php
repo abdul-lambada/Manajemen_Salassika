@@ -174,7 +174,7 @@ if (!empty($ip_address)) {
                             <h6 class="m-0 font-weight-bold text-primary">Data Log Kehadiran</h6>
                         </div>
                         <div class="card-body">
-                            <table class="table table-bordered">
+                            <table class="table table-bordered table-responsive-sm">
                                 <thead>
                                     <tr>
                                         <th>User ID</th>

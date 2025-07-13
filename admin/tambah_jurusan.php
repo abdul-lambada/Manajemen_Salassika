@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (!empty($nama_jurusan)) {
         try {
-            $stmt = $conn->prepare("INSERT INTO Jurusan (nama_jurusan) VALUES (:nama_jurusan)");
+            $stmt = $conn->prepare("INSERT INTO jurusan (nama_jurusan) VALUES (:nama_jurusan)");
             $stmt->bindParam(':nama_jurusan', $nama_jurusan);
             $stmt->execute();
 

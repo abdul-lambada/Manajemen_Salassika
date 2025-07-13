@@ -12,7 +12,7 @@ if (isset($_GET['id'])) {
     $id_jurusan = $_GET['id'];
 
     try {
-        $stmt = $conn->prepare("DELETE FROM Jurusan WHERE id_jurusan = :id_jurusan");
+        $stmt = $conn->prepare("DELETE FROM jurusan WHERE id_jurusan = :id_jurusan");
         $stmt->bindParam(':id_jurusan', $id_jurusan);
         $stmt->execute();
 

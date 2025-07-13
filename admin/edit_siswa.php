@@ -21,7 +21,7 @@ $stmt = $conn->prepare("
         s.*, 
         k.nama_kelas, 
         u.name AS user_name 
-    FROM Siswa s
+    FROM siswa s
     JOIN kelas k ON s.id_kelas = k.id_kelas
     LEFT JOIN users u ON s.user_id = u.id
     WHERE s.id_siswa = :id_siswa
@@ -40,15 +40,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn->beginTransaction();
 
-        $nis = $_POST['nis'];
+        $nisn = $_POST['nisn'];
+        $nama_siswa = $_POST['nama_siswa'];
         $jenis_kelamin = $_POST['jenis_kelamin'];
         $tanggal_lahir = $_POST['tanggal_lahir'];
         $alamat = $_POST['alamat'];
         $id_kelas = $_POST['id_kelas'];
-        $user_id = $_POST['user_id'];
+        $nis = $_POST['nis'];
+
+        // Validasi NISN unik
+        $check_nisn = $conn->prepare("SELECT id_siswa FROM siswa WHERE nisn = ? AND id_siswa != ?");
+        $check_nisn->execute([$nisn, $id_siswa]);
+        
+        if ($check_nisn->rowCount() > 0) {
+            throw new Exception("NISN sudah digunakan oleh siswa lain");
+        }
 
         // Validasi NIS unik
-        $check_nis = $conn->prepare("SELECT id_siswa FROM Siswa WHERE nis = ? AND id_siswa != ?");
+        $check_nis = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ? AND id_siswa != ?");
         $check_nis->execute([$nis, $id_siswa]);
         
         if ($check_nis->rowCount() > 0) {
@@ -57,23 +66,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Update data siswa
         $stmt = $conn->prepare("
-            UPDATE Siswa SET 
+            UPDATE siswa SET 
+                nisn = :nisn,
+                nama_siswa = :nama_siswa,
                 nis = :nis, 
                 jenis_kelamin = :jenis_kelamin, 
                 tanggal_lahir = :tanggal_lahir, 
                 alamat = :alamat, 
-                id_kelas = :id_kelas, 
-                user_id = :user_id 
+                id_kelas = :id_kelas
             WHERE id_siswa = :id_siswa
         ");
         
         $stmt->execute([
+            ':nisn' => $nisn,
+            ':nama_siswa' => $nama_siswa,
             ':nis' => $nis,
             ':jenis_kelamin' => $jenis_kelamin,
             ':tanggal_lahir' => $tanggal_lahir,
             ':alamat' => $alamat,
             ':id_kelas' => $id_kelas,
-            ':user_id' => $user_id,
             ':id_siswa' => $id_siswa
         ]);
 
@@ -90,10 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Ambil daftar kelas untuk dropdown
 $stmt_kelas = $conn->query("SELECT id_kelas, nama_kelas FROM kelas");
 $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
-
-// Ambil daftar user untuk dropdown (SEMUA USER TANPA FILTER ROLE)
-$stmt_users = $conn->query("SELECT id, name FROM users");
-$users_list = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -130,6 +137,16 @@ $users_list = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
                                 
                                 <form method="POST" action="">
                                     <div class="form-group">
+                                        <label>NISN</label>
+                                        <input type="text" name="nisn" class="form-control" 
+                                               value="<?= htmlspecialchars($siswa['nisn']) ?>" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nama Siswa</label>
+                                        <input type="text" name="nama_siswa" class="form-control" 
+                                               value="<?= htmlspecialchars($siswa['nama_siswa']) ?>" required>
+                                    </div>
+                                    <div class="form-group">
                                         <label>NIS</label>
                                         <input type="text" name="nis" class="form-control" 
                                                value="<?= htmlspecialchars($siswa['nis']) ?>" required>
@@ -159,21 +176,6 @@ $users_list = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
                                                     <?= htmlspecialchars($kelas['nama_kelas']) ?>
                                                 </option>
                                             <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>User</label>
-                                        <select name="user_id" class="form-control" required>
-                                            <?php if (!empty($users_list)): ?>
-                                                <?php foreach ($users_list as $user): ?>
-                                                    <option value="<?= $user['id'] ?>" 
-                                                        <?= ($siswa['user_id'] == $user['id']) ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($user['name']) ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <option value="">Tidak ada user tersedia</option>
-                                            <?php endif; ?>
                                         </select>
                                     </div>
                                     <button type="submit" class="btn btn-primary">Simpan Perubahan</button>

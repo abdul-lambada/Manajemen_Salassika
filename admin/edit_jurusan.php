@@ -8,7 +8,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 }
 
 $id_jurusan = $_GET['id'];
-$stmt = $conn->prepare("SELECT * FROM Jurusan WHERE id_jurusan = :id_jurusan");
+$stmt = $conn->prepare("SELECT * FROM jurusan WHERE id_jurusan = :id_jurusan");
 $stmt->bindParam(':id_jurusan', $id_jurusan);
 $stmt->execute();
 $jurusan = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Update data di database
     if (!empty($nama_jurusan)) {
         try {
-            $stmt = $conn->prepare("UPDATE Jurusan SET nama_jurusan = :nama_jurusan WHERE id_jurusan = :id_jurusan");
+            $stmt = $conn->prepare("UPDATE jurusan SET nama_jurusan = :nama_jurusan WHERE id_jurusan = :id_jurusan");
             $stmt->bindParam(':nama_jurusan', $nama_jurusan);
             $stmt->bindParam(':id_jurusan', $id_jurusan);
             $stmt->execute();

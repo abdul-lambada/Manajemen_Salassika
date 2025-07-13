@@ -14,14 +14,22 @@ $page = isset($_GET['page']) && is_numeric($_GET['page']) ? $_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 // Ambil total jumlah data guru
-$stmt_total = $conn->query("SELECT COUNT(*) AS total FROM Guru");
+$stmt_total = $conn->query("SELECT COUNT(*) AS total FROM guru");
 $totalRecords = $stmt_total->fetch(PDO::FETCH_ASSOC)['total'];
 
 // Hitung total halaman
 $totalPages = ceil($totalRecords / $limit);
 
 // Ambil data guru dengan limit dan offset
-$stmt = $conn->prepare("SELECT * FROM Guru LIMIT :limit OFFSET :offset");
+$stmt = $conn->prepare("
+    SELECT 
+        g.*, 
+        u.name AS user_name,
+        u.uid AS user_uid
+    FROM guru g
+    LEFT JOIN users u ON g.user_id = u.id
+    LIMIT :limit OFFSET :offset
+");
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
@@ -96,6 +104,7 @@ switch ($status) {
                                         <th>Jenis Kelamin</th>
                                         <th>Tanggal Lahir</th>
                                         <th>Alamat</th>
+                                        <th>User</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -109,15 +118,42 @@ switch ($status) {
                                                 <td><?php echo htmlspecialchars($guru['jenis_kelamin']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['tanggal_lahir']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['alamat']); ?></td>
+                                                <td><?php echo htmlspecialchars($guru['user_name'] ?? 'Tidak ada user'); ?></td>
                                                 <td>
                                                     <a href="edit_guru.php?id=<?php echo htmlspecialchars($guru['id_guru']); ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
-                                                    <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-trash"></i></a>
+                                                    <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal<?php echo $guru['id_guru']; ?>"><i class="fas fa-trash"></i></a>
                                                 </td>
                                             </tr>
+                                            
+                                            <!-- Delete Confirmation Modal -->
+                                            <div class="modal fade" id="deleteModal<?php echo $guru['id_guru']; ?>" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Konfirmasi Hapus</h5>
+                                                            <button type="button" class="close" data-dismiss="modal">
+                                                                <span>&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            Apakah Anda yakin ingin menghapus data guru ini?
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                                Batal
+                                                            </button>
+                                                            <a href="hapus_guru.php?id=<?php echo $guru['id_guru']; ?>" 
+                                                               class="btn btn-danger">
+                                                                Hapus
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="7" class="text-center">Tidak ada data guru.</td>
+                                            <td colspan="8" class="text-center">Tidak ada data guru.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -147,24 +183,6 @@ switch ($status) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Hapus Data</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <a class="btn btn-primary" href="hapus_guru.php?id=<?php echo htmlspecialchars($guru['id_guru']); ?>">Hapus</a>
             </div>
         </div>
     </div>

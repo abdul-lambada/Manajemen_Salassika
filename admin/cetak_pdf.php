@@ -1,12 +1,33 @@
 <?php
-require_once '../vendor/fpdf/fpdf.php';
+// Check if we can find FPDF in different locations
+$fpdf_paths = [
+    '../vendor/fpdf/fpdf.php',
+    '../fpdf/fpdf.php',
+    '../lib/fpdf/fpdf.php',
+    '../includes/fpdf/fpdf.php',
+    '../assets/vendor/fpdf/fpdf.php'
+];
+
+$fpdf_found = false;
+foreach ($fpdf_paths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $fpdf_found = true;
+        break;
+    }
+}
+
+if (!$fpdf_found) {
+    die("FPDF library not found. Please install FPDF or correct the path.");
+}
+
 include '../includes/db.php';
 
 // Ambil ID pengaduan dari query string
 $id_pengaduan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Query data pengaduan
-$stmt = $conn->prepare("SELECT * FROM Pengaduan WHERE id_pengaduan = :id_pengaduan");
+$stmt = $conn->prepare("SELECT * FROM pengaduan WHERE id_pengaduan = :id_pengaduan");
 $stmt->bindParam(':id_pengaduan', $id_pengaduan);
 $stmt->execute();
 $pengaduan = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -104,9 +125,11 @@ if (!empty($pengaduan['file_pendukung'])) {
 
     if (in_array(strtolower($fileExtension), $imageExtensions)) {
         // Jika file adalah gambar, tampilkan di PDF
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
         $pdf->Ln(10); // Jarak antara teks dan gambar
-        $pdf->Image($filePath, $pdf->GetX(), $pdf->GetY(), 80); // Gambar dengan lebar 80px
-        $pdf->Ln(15); // Jarak setelah gambar
+        $pdf->Image($filePath, $x + 5, $y + 5, 80); // Gambar dengan lebar 80px
+        $pdf->Ln(60); // Jarak setelah gambar (atur sesuai tinggi gambar)
     } else {
         // Jika bukan gambar, tampilkan nama file
         $pdf->Cell($contentWidth, 10, htmlspecialchars($pengaduan['file_pendukung']), 0, 1);

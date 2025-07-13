@@ -1,8 +1,10 @@
 </div>
 <!-- Footer -->
-<footer class="footer bg-primary py-3">
-    <div class="container text-center">
-        <span class="text-white">© <span id="currentYear"></span> Sistem Informasi Management Salassika. All rights reserved.</span>
+<footer class="sticky-footer bg-white">
+    <div class="container my-auto">
+        <div class="copyright text-center my-auto py-2">
+            &copy; <?php echo date('Y'); ?> Absensi Sekolah. All rights reserved.
+        </div>
     </div>
 </footer>
 

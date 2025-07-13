@@ -30,10 +30,11 @@ CREATE TABLE `absensi_guru` (
   `id_absensi_guru` int(11) NOT NULL,
   `id_guru` int(11) NOT NULL,
   `tanggal` date NOT NULL,
-  `status_kehadiran` enum('Hadir','Alpa','Sakit','Ijin') NOT NULL,
+  `status_kehadiran` enum('Hadir','Telat','Izin','Sakit','Alfa') NOT NULL,
   `jam_masuk` time DEFAULT NULL,
   `jam_keluar` time DEFAULT NULL,
-  `catatan` text
+  `catatan` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -46,10 +47,11 @@ CREATE TABLE `absensi_siswa` (
   `id_absensi_siswa` int(11) NOT NULL,
   `id_siswa` int(11) NOT NULL,
   `tanggal` date NOT NULL,
-  `status_kehadiran` enum('Hadir','Alpa','Sakit','Ijin') NOT NULL,
+  `status_kehadiran` enum('Hadir','Telat','Sakit','Ijin','Tidak Hadir') NOT NULL,
   `jam_masuk` time DEFAULT NULL,
   `jam_keluar` time DEFAULT NULL,
-  `catatan` text
+  `catatan` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -66,22 +68,23 @@ CREATE TABLE `guru` (
   `tanggal_lahir` date DEFAULT NULL,
   `alamat` text NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin','guru') DEFAULT 'guru'
+  `role` enum('admin','guru') DEFAULT 'guru',
+  `user_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data untuk tabel `guru`
 --
 
-INSERT INTO `guru` (`id_guru`, `nama_guru`, `nip`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `password`, `role`) VALUES
-(1, 'Guru_A', '12345678', 'Laki-laki', '2001-09-13', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin'),
-(2, 'Guru_B', '12345678', 'Laki-laki', '2001-09-14', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin'),
-(3, 'Guru_C', '12345679', 'Laki-laki', '2001-09-15', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru'),
-(4, 'Guru_D', '12345680', 'Laki-laki', '2001-09-16', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru'),
-(5, 'Guru_E', '12345681', 'Laki-laki', '2001-09-17', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru'),
-(6, 'Guru_F', '12345682', 'Laki-laki', '2001-09-18', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru'),
-(7, 'Guru_G', '12345683', 'Laki-laki', '2001-09-19', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru'),
-(8, 'Jokiawan', '123', 'Laki-laki', '2025-02-28', '-', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'guru');
+INSERT INTO `guru` (`id_guru`, `nama_guru`, `nip`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `password`, `role`, `user_id`) VALUES
+(1, 'Guru_A', '12345678', 'Laki-laki', '2001-09-13', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin', 2),
+(2, 'Guru_B', '12345679', 'Laki-laki', '2001-09-14', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin', 3),
+(3, 'Guru_C', '12345680', 'Laki-laki', '2001-09-15', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', 4),
+(4, 'Guru_D', '12345681', 'Laki-laki', '2001-09-16', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', 5),
+(5, 'Guru_E', '12345682', 'Laki-laki', '2001-09-17', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', 6),
+(6, 'Guru_F', '12345683', 'Laki-laki', '2001-09-18', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', 7),
+(7, 'Guru_G', '12345684', 'Laki-laki', '2001-09-19', 'mjl', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', 8),
+(8, 'Jokiawan', '12345685', 'Laki-laki', '2025-02-28', '-', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'guru', 9);
 
 -- --------------------------------------------------------
 
@@ -200,18 +203,18 @@ CREATE TABLE `siswa` (
 -- Dumping data untuk tabel `siswa`
 --
 
-INSERT INTO `siswa` (`id_siswa`, `nisn`, `nama_siswa`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `id_kelas`, `nis`) VALUES
-(1, '26549414', 'Siswa1', 'Laki-laki', '2001-03-24', 'mjl', 1, '2345678'),
-(2, '26549415', 'Siswa2', 'Laki-laki', '2001-03-25', 'mjl', 3, '2345679'),
-(3, '26549416', 'Siswa3', 'Laki-laki', '2001-03-26', 'mjl', 3, '2345680'),
-(4, '26549417', 'Siswa4', 'Laki-laki', '2001-03-27', 'mjl', 1, '2345681'),
-(5, '26549418', 'Siswa5', 'Laki-laki', '2001-03-28', 'mjl', 1, '2345682'),
-(6, '26549419', 'Siswa6', 'Perempuan', '2001-03-29', 'mjl', 1, '2345683'),
-(7, '26549420', 'Siswa7', 'Perempuan', '2001-03-30', 'mjl', 1, '2345684'),
-(8, '26549421', 'Siswa8', 'Perempuan', '2001-03-31', 'mjl', 1, '2345685'),
-(9, '26549422', 'Siswa9', 'Perempuan', '2001-04-01', 'mjl', 1, '2345686'),
-(10, '26549423', 'Siswa10', 'Perempuan', '2001-04-02', 'mjl', 1, '2345687'),
-(11, '999999', 'AJis', 'Laki-laki', '2025-02-13', '-', 3, '');
+INSERT INTO `siswa` (`id_siswa`, `nisn`, `nama_siswa`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `id_kelas`, `nis`, `user_id`) VALUES
+(1, '26549414', 'Siswa1', 'Laki-laki', '2001-03-24', 'mjl', 1, '2345678', 10),
+(2, '26549415', 'Siswa2', 'Laki-laki', '2001-03-25', 'mjl', 3, '2345679', 11),
+(3, '26549416', 'Siswa3', 'Laki-laki', '2001-03-26', 'mjl', 3, '2345680', 12),
+(4, '26549417', 'Siswa4', 'Laki-laki', '2001-03-27', 'mjl', 1, '2345681', 13),
+(5, '26549418', 'Siswa5', 'Laki-laki', '2001-03-28', 'mjl', 1, '2345682', 14),
+(6, '26549419', 'Siswa6', 'Perempuan', '2001-03-29', 'mjl', 1, '2345683', 15),
+(7, '26549420', 'Siswa7', 'Perempuan', '2001-03-30', 'mjl', 1, '2345684', 16),
+(8, '26549421', 'Siswa8', 'Perempuan', '2001-03-31', 'mjl', 1, '2345685', 17),
+(9, '26549422', 'Siswa9', 'Perempuan', '2001-04-01', 'mjl', 1, '2345686', 18),
+(10, '26549423', 'Siswa10', 'Perempuan', '2001-04-02', 'mjl', 1, '2345687', 19),
+(11, '999999', 'AJis', 'Laki-laki', '2025-02-13', '-', 3, '', 20);
 
 -- --------------------------------------------------------
 
@@ -221,11 +224,12 @@ INSERT INTO `siswa` (`id_siswa`, `nisn`, `nama_siswa`, `jenis_kelamin`, `tanggal
 
 CREATE TABLE `tbl_kehadiran` (
   `id` int(11) NOT NULL,
-  `user_id` varchar(50) DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
   `user_name` varchar(100) DEFAULT NULL,
   `timestamp` datetime DEFAULT NULL,
   `verification_mode` varchar(50) DEFAULT NULL,
-  `status` varchar(10) DEFAULT NULL
+  `status` varchar(10) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -233,96 +237,26 @@ CREATE TABLE `tbl_kehadiran` (
 --
 
 INSERT INTO `tbl_kehadiran` (`id`, `user_id`, `user_name`, `timestamp`, `verification_mode`, `status`) VALUES
-(1, '1', '1', '2025-02-25 13:56:15', NULL, 'Masuk'),
-(2, '1', '1', '2025-02-25 14:05:29', NULL, 'Masuk'),
-(3, '1', '1', '2025-02-25 14:09:45', NULL, 'Masuk'),
-(4, '1', '1', '2025-02-25 14:21:28', NULL, 'Masuk'),
-(5, '1', '1', '2025-02-25 15:15:30', NULL, 'Masuk'),
-(6, '2', '2', '2025-02-26 09:31:20', NULL, 'Keluar'),
-(7, '1', '1', '2025-02-26 10:01:41', NULL, 'Masuk'),
-(8, '1', '1', '2025-02-26 11:04:16', NULL, 'Masuk'),
-(9, '1', '1', '2025-02-26 11:29:02', NULL, 'Masuk'),
-(10, '1', '1', '2025-02-26 13:16:41', NULL, 'Masuk'),
-(11, '1', '1', '2025-02-26 13:51:47', NULL, 'Masuk'),
-(12, '1', '1', '2025-02-26 16:14:37', NULL, 'Masuk'),
-(13, '1', '1', '2025-02-25 13:56:15', 'Unknown', 'Masuk'),
-(14, '1', '1', '2025-02-25 14:05:29', 'Unknown', 'Masuk'),
-(15, '1', '1', '2025-02-25 14:09:45', 'Unknown', 'Masuk'),
-(16, '1', '1', '2025-02-25 14:21:28', 'Unknown', 'Masuk'),
-(17, '1', '1', '2025-02-25 15:15:30', 'Unknown', 'Masuk'),
-(18, '2', '2', '2025-02-26 09:31:20', 'Unknown', 'Keluar'),
-(19, '1', '1', '2025-02-26 10:01:41', 'Unknown', 'Masuk'),
-(20, '1', '1', '2025-02-26 11:04:16', 'Unknown', 'Masuk'),
-(21, '1', '1', '2025-02-26 11:29:02', 'Unknown', 'Masuk'),
-(22, '1', '1', '2025-02-26 13:16:41', 'Unknown', 'Masuk'),
-(23, '1', '1', '2025-02-26 13:51:47', 'Unknown', 'Masuk'),
-(24, '1', '1', '2025-02-26 16:14:37', 'Unknown', 'Masuk'),
-(25, '1', '1', '2025-02-26 18:15:25', 'Unknown', 'Masuk'),
-(26, '1', 'admin', '2025-02-25 13:56:15', 'Unknown', 'Masuk'),
-(27, '1', 'admin', '2025-02-25 14:05:29', 'Unknown', 'Masuk'),
-(28, '1', 'admin', '2025-02-25 14:09:45', 'Unknown', 'Masuk'),
-(29, '1', 'admin', '2025-02-25 14:21:28', 'Unknown', 'Masuk'),
-(30, '1', 'admin', '2025-02-25 15:15:30', 'Unknown', 'Masuk'),
-(31, '2', '2', '2025-02-26 09:31:20', 'Unknown', 'Keluar'),
-(32, '1', 'admin', '2025-02-26 10:01:41', 'Unknown', 'Masuk'),
-(33, '1', 'admin', '2025-02-26 11:04:16', 'Unknown', 'Masuk'),
-(34, '1', 'admin', '2025-02-26 11:29:02', 'Unknown', 'Masuk'),
-(35, '1', 'admin', '2025-02-26 13:16:41', 'Unknown', 'Masuk'),
-(36, '1', 'admin', '2025-02-26 13:51:47', 'Unknown', 'Masuk'),
-(37, '1', 'admin', '2025-02-26 16:14:37', 'Unknown', 'Masuk'),
-(38, '1', 'admin', '2025-02-26 18:15:25', 'Unknown', 'Masuk'),
-(39, '1', 'admin', '2025-02-26 18:16:48', 'Unknown', 'Masuk'),
-(40, '1', 'admin', '2025-02-26 18:16:56', 'Unknown', 'Masuk'),
-(41, '1', 'admin', '2025-02-25 13:56:15', 'Unknown', 'Masuk'),
-(42, '1', 'admin', '2025-02-25 14:05:29', 'Unknown', 'Masuk'),
-(43, '1', 'admin', '2025-02-25 14:09:45', 'Unknown', 'Masuk'),
-(44, '1', 'admin', '2025-02-25 14:21:28', 'Unknown', 'Masuk'),
-(45, '1', 'admin', '2025-02-25 15:15:30', 'Unknown', 'Masuk'),
-(46, '2', '2', '2025-02-26 09:31:20', 'Unknown', 'Keluar'),
-(47, '1', 'admin', '2025-02-26 10:01:41', 'Unknown', 'Masuk'),
-(48, '1', 'admin', '2025-02-26 11:04:16', 'Unknown', 'Masuk'),
-(49, '1', 'admin', '2025-02-26 11:29:02', 'Unknown', 'Masuk'),
-(50, '1', 'admin', '2025-02-26 13:16:41', 'Unknown', 'Masuk'),
-(51, '1', 'admin', '2025-02-26 13:51:47', 'Unknown', 'Masuk'),
-(52, '1', 'admin', '2025-02-26 16:14:37', 'Unknown', 'Masuk'),
-(53, '1', 'admin', '2025-02-26 18:15:25', 'Unknown', 'Masuk'),
-(54, '1', 'admin', '2025-02-26 18:16:48', 'Unknown', 'Masuk'),
-(55, '1', 'admin', '2025-02-26 18:16:56', 'Unknown', 'Masuk'),
-(56, '5', 'arief', '2025-03-05 15:57:07', 'Unknown', 'Masuk'),
-(57, '1', 'admin', '2025-02-25 13:56:15', 'Unknown', 'Masuk'),
-(58, '1', 'admin', '2025-02-25 14:05:29', 'Unknown', 'Masuk'),
-(59, '1', 'admin', '2025-02-25 14:09:45', 'Unknown', 'Masuk'),
-(60, '1', 'admin', '2025-02-25 14:21:28', 'Unknown', 'Masuk'),
-(61, '1', 'admin', '2025-02-25 15:15:30', 'Unknown', 'Masuk'),
-(62, '2', '2', '2025-02-26 09:31:20', 'Unknown', 'Keluar'),
-(63, '1', 'admin', '2025-02-26 10:01:41', 'Unknown', 'Masuk'),
-(64, '1', 'admin', '2025-02-26 11:04:16', 'Unknown', 'Masuk'),
-(65, '1', 'admin', '2025-02-26 11:29:02', 'Unknown', 'Masuk'),
-(66, '1', 'admin', '2025-02-26 13:16:41', 'Unknown', 'Masuk'),
-(67, '1', 'admin', '2025-02-26 13:51:47', 'Unknown', 'Masuk'),
-(68, '1', 'admin', '2025-02-26 16:14:37', 'Unknown', 'Masuk'),
-(69, '1', 'admin', '2025-02-26 18:15:25', 'Unknown', 'Masuk'),
-(70, '1', 'admin', '2025-02-26 18:16:48', 'Unknown', 'Masuk'),
-(71, '1', 'admin', '2025-02-26 18:16:56', 'Unknown', 'Masuk'),
-(72, '5', 'arief', '2025-03-05 15:57:07', 'Unknown', 'Masuk'),
-(73, '1', 'admin', '2025-03-05 15:57:48', 'Unknown', 'Masuk'),
-(74, '1', 'admin', '2025-02-25 13:56:15', 'Unknown', 'Masuk'),
-(75, '1', 'admin', '2025-02-25 14:05:29', 'Unknown', 'Masuk'),
-(76, '1', 'admin', '2025-02-25 14:09:45', 'Unknown', 'Masuk'),
-(77, '1', 'admin', '2025-02-25 14:21:28', 'Unknown', 'Masuk'),
-(78, '1', 'admin', '2025-02-25 15:15:30', 'Unknown', 'Masuk'),
-(79, '2', '2', '2025-02-26 09:31:20', 'Unknown', 'Keluar'),
-(80, '1', 'admin', '2025-02-26 10:01:41', 'Unknown', 'Masuk'),
-(81, '1', 'admin', '2025-02-26 11:04:16', 'Unknown', 'Masuk'),
-(82, '1', 'admin', '2025-02-26 11:29:02', 'Unknown', 'Masuk'),
-(83, '1', 'admin', '2025-02-26 13:16:41', 'Unknown', 'Masuk'),
-(84, '1', 'admin', '2025-02-26 13:51:47', 'Unknown', 'Masuk'),
-(85, '1', 'admin', '2025-02-26 16:14:37', 'Unknown', 'Masuk'),
-(86, '1', 'admin', '2025-02-26 18:15:25', 'Unknown', 'Masuk'),
-(87, '1', 'admin', '2025-02-26 18:16:48', 'Unknown', 'Masuk'),
-(88, '1', 'admin', '2025-02-26 18:16:56', 'Unknown', 'Masuk'),
-(89, '5', 'arief', '2025-03-05 15:57:07', 'Unknown', 'Masuk'),
-(90, '1', 'admin', '2025-03-05 15:57:48', 'Unknown', 'Masuk');
+(1, 1, 'Admin', '2025-02-25 13:56:15', 'Fingerprint', 'SUCCESS'),
+(2, 1, 'Admin', '2025-02-25 14:05:29', 'Fingerprint', 'SUCCESS'),
+(3, 1, 'Admin', '2025-02-25 14:09:45', 'Fingerprint', 'SUCCESS'),
+(4, 1, 'Admin', '2025-02-25 14:21:28', 'Fingerprint', 'SUCCESS'),
+(5, 1, 'Admin', '2025-02-25 15:15:30', 'Fingerprint', 'SUCCESS'),
+(6, 3, 'Guru_B', '2025-02-26 09:31:20', 'Fingerprint', 'SUCCESS'),
+(7, 1, 'Admin', '2025-02-26 10:01:41', 'Fingerprint', 'SUCCESS'),
+(8, 1, 'Admin', '2025-02-26 11:04:16', 'Fingerprint', 'SUCCESS'),
+(9, 1, 'Admin', '2025-02-26 11:29:02', 'Fingerprint', 'SUCCESS'),
+(10, 1, 'Admin', '2025-02-26 13:16:41', 'Fingerprint', 'SUCCESS'),
+(11, 1, 'Admin', '2025-02-26 13:51:47', 'Fingerprint', 'SUCCESS'),
+(12, 1, 'Admin', '2025-02-26 16:14:37', 'Fingerprint', 'SUCCESS'),
+(13, 1, 'Admin', '2025-02-26 18:15:25', 'Fingerprint', 'SUCCESS'),
+(14, 1, 'Admin', '2025-02-26 18:16:48', 'Fingerprint', 'SUCCESS'),
+(15, 1, 'Admin', '2025-02-26 18:16:56', 'Fingerprint', 'SUCCESS'),
+(16, 6, 'Guru_E', '2025-03-05 15:57:07', 'Fingerprint', 'SUCCESS'),
+(17, 1, 'Admin', '2025-03-05 15:57:48', 'Fingerprint', 'SUCCESS'),
+(18, 10, 'Siswa1', '2025-03-05 16:00:00', 'Fingerprint', 'SUCCESS'),
+(19, 11, 'Siswa2', '2025-03-05 16:01:00', 'Fingerprint', 'SUCCESS'),
+(20, 12, 'Siswa3', '2025-03-05 16:02:00', 'Fingerprint', 'SUCCESS');
 
 -- --------------------------------------------------------
 
@@ -344,10 +278,50 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `password`, `role`, `uid`, `created_at`) VALUES
-(1, 'Admin', '', 'admin', '1', '2025-02-26 07:53:17'),
-(2, '2', '', '', '2', '2025-02-26 07:59:45'),
-(3, '5', '', '', '3', '2025-02-26 07:59:45'),
-(4, 'ayam', '', '', '4', '2025-02-26 07:59:45');
+(1, 'Admin', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'admin', '1', '2025-02-26 07:53:17'),
+(2, 'Guru_A', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin', '12345678', '2025-02-26 07:59:45'),
+(3, 'Guru_B', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345679', '2025-02-26 07:59:45'),
+(4, 'Guru_C', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345680', '2025-02-26 07:59:45'),
+(5, 'Guru_D', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345681', '2025-02-26 07:59:45'),
+(6, 'Guru_E', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345682', '2025-02-26 07:59:45'),
+(7, 'Guru_F', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345683', '2025-02-26 07:59:45'),
+(8, 'Guru_G', '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'guru', '12345684', '2025-02-26 07:59:45'),
+(9, 'Jokiawan', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'guru', '12345685', '2025-02-26 07:59:45'),
+(10, 'Siswa1', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345678', '2025-02-26 07:59:45'),
+(11, 'Siswa2', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345679', '2025-02-26 07:59:45'),
+(12, 'Siswa3', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345680', '2025-02-26 07:59:45'),
+(13, 'Siswa4', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345681', '2025-02-26 07:59:45'),
+(14, 'Siswa5', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345682', '2025-02-26 07:59:45'),
+(15, 'Siswa6', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345683', '2025-02-26 07:59:45'),
+(16, 'Siswa7', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345684', '2025-02-26 07:59:45'),
+(17, 'Siswa8', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345685', '2025-02-26 07:59:45'),
+(18, 'Siswa9', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345686', '2025-02-26 07:59:45'),
+(19, 'Siswa10', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '2345687', '2025-02-26 07:59:45'),
+(20, 'AJis', '$2y$10$AbD5jXSqLU7pfXMUWSv6q.4E2RTIObaDr77WLt7AnKNBuxsTgZVdO', 'siswa', '999999', '2025-02-26 07:59:45');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `fingerprint_logs`
+--
+
+CREATE TABLE `fingerprint_logs` (
+  `id` int(11) NOT NULL,
+  `action` varchar(50) NOT NULL,
+  `message` text NOT NULL,
+  `status` enum('success','error','warning') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data untuk tabel `fingerprint_logs`
+--
+
+INSERT INTO `fingerprint_logs` (`id`, `action`, `message`, `status`, `created_at`) VALUES
+(1, 'SYNC_DATA', 'Berhasil sinkronisasi data fingerprint', 'success', '2025-03-05 10:00:00'),
+(2, 'ADD_USER', 'Berhasil menambahkan user baru ke device', 'success', '2025-03-05 10:01:00'),
+(3, 'DELETE_USER', 'Berhasil menghapus user dari device', 'success', '2025-03-05 10:02:00'),
+(4, 'CONNECTION_TEST', 'Koneksi ke device fingerprint berhasil', 'success', '2025-03-05 10:03:00');
 
 --
 -- Indexes for dumped tables
@@ -371,7 +345,9 @@ ALTER TABLE `absensi_siswa`
 -- Indexes for table `guru`
 --
 ALTER TABLE `guru`
-  ADD PRIMARY KEY (`id_guru`);
+  ADD PRIMARY KEY (`id_guru`),
+  ADD UNIQUE KEY `nip` (`nip`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `jurusan`
@@ -406,21 +382,29 @@ ALTER TABLE `pengaduan`
 ALTER TABLE `siswa`
   ADD PRIMARY KEY (`id_siswa`),
   ADD UNIQUE KEY `nisn` (`nisn`),
-  ADD KEY `id_kelas` (`id_kelas`);
+  ADD UNIQUE KEY `nis` (`nis`),
+  ADD KEY `id_kelas` (`id_kelas`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `tbl_kehadiran`
 --
 ALTER TABLE `tbl_kehadiran`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`name`),
-  ADD UNIQUE KEY `id_fingerprint` (`uid`);
+  ADD UNIQUE KEY `uid` (`uid`);
+
+--
+-- Indexes for table `fingerprint_logs`
+--
+ALTER TABLE `fingerprint_logs`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -470,12 +454,17 @@ ALTER TABLE `siswa`
 -- AUTO_INCREMENT for table `tbl_kehadiran`
 --
 ALTER TABLE `tbl_kehadiran`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+--
+-- AUTO_INCREMENT for table `fingerprint_logs`
+--
+ALTER TABLE `fingerprint_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
@@ -484,13 +473,19 @@ ALTER TABLE `users`
 -- Ketidakleluasaan untuk tabel `absensi_guru`
 --
 ALTER TABLE `absensi_guru`
-  ADD CONSTRAINT `absensi_guru_ibfk_1` FOREIGN KEY (`id_guru`) REFERENCES `users` (`ID`) ON DELETE CASCADE;
+  ADD CONSTRAINT `absensi_guru_ibfk_1` FOREIGN KEY (`id_guru`) REFERENCES `guru` (`id_guru`) ON DELETE CASCADE;
 
 --
 -- Ketidakleluasaan untuk tabel `absensi_siswa`
 --
 ALTER TABLE `absensi_siswa`
-  ADD CONSTRAINT `absensi_siswa_ibfk_1` FOREIGN KEY (`id_siswa`) REFERENCES `users` (`ID`) ON DELETE CASCADE;
+  ADD CONSTRAINT `absensi_siswa_ibfk_1` FOREIGN KEY (`id_siswa`) REFERENCES `siswa` (`id_siswa`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `guru`
+--
+ALTER TABLE `guru`
+  ADD CONSTRAINT `guru_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Ketidakleluasaan untuk tabel `kelas`
@@ -511,6 +506,12 @@ ALTER TABLE `laporan_absensi`
 ALTER TABLE `siswa`
   ADD CONSTRAINT `siswa_ibfk_1` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`),
   ADD CONSTRAINT `siswa_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Ketidakleluasaan untuk tabel `tbl_kehadiran`
+--
+ALTER TABLE `tbl_kehadiran`
+  ADD CONSTRAINT `tbl_kehadiran_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

@@ -12,14 +12,29 @@ if (isset($_GET['id'])) {
     $id_siswa = $_GET['id'];
 
     try {
-        $stmt = $conn->prepare("DELETE FROM Siswa WHERE id_siswa = :id_siswa");
-        $stmt->bindParam(':id_siswa', $id_siswa);
-        $stmt->execute();
+        $conn->beginTransaction();
+        
+        // Ambil user_id dari siswa
+        $stmt_get = $conn->prepare("SELECT user_id FROM siswa WHERE id_siswa = ?");
+        $stmt_get->execute([$id_siswa]);
+        $siswa = $stmt_get->fetch(PDO::FETCH_ASSOC);
+        
+        if ($siswa && $siswa['user_id']) {
+            // Hapus data dari tabel users
+            $stmt_user = $conn->prepare("DELETE FROM users WHERE id = ?");
+            $stmt_user->execute([$siswa['user_id']]);
+        }
+        
+        // Hapus data dari tabel siswa
+        $stmt = $conn->prepare("DELETE FROM siswa WHERE id_siswa = ?");
+        $stmt->execute([$id_siswa]);
 
+        $conn->commit();
         // Redirect ke halaman list siswa dengan status success
         header("Location: list_siswa.php?status=delete_success");
         exit();
     } catch (\PDOException $e) {
+        $conn->rollBack();
         // Redirect ke halaman list siswa dengan status error
         header("Location: list_siswa.php?status=error");
         exit();

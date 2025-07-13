@@ -3,6 +3,7 @@ $title = "Dashboard Admin";
 $active_page = "dashboard"; // Untuk menandai menu aktif di sidebar
 include __DIR__ . '/../templates/header.php';
 include __DIR__ . '/../templates/sidebar.php';
+include __DIR__ . '/../templates/navbar.php';
 
 // Koneksi database
 include __DIR__ . '/../includes/db.php';
@@ -10,23 +11,23 @@ include __DIR__ . '/../includes/db.php';
 // Mengambil statistik dari database
 try {
     // Jumlah Siswa
-    $stmt_siswa = $conn->query("SELECT COUNT(*) AS total_siswa FROM Siswa");
+    $stmt_siswa = $conn->query("SELECT COUNT(*) AS total_siswa FROM siswa");
     $total_siswa = $stmt_siswa->fetch(PDO::FETCH_ASSOC)['total_siswa'];
 
     // Jumlah Guru
-    $stmt_guru = $conn->query("SELECT COUNT(*) AS total_guru FROM Guru");
+    $stmt_guru = $conn->query("SELECT COUNT(*) AS total_guru FROM guru");
     $total_guru = $stmt_guru->fetch(PDO::FETCH_ASSOC)['total_guru'];
 
     // Jumlah Kelas
-    $stmt_kelas = $conn->query("SELECT COUNT(*) AS total_kelas FROM Kelas");
+    $stmt_kelas = $conn->query("SELECT COUNT(*) AS total_kelas FROM kelas");
     $total_kelas = $stmt_kelas->fetch(PDO::FETCH_ASSOC)['total_kelas'];
 
     // Jumlah Absensi Guru
-    $stmt_absensi_guru = $conn->query("SELECT COUNT(*) AS total_absensi_guru FROM Absensi_guru");
+    $stmt_absensi_guru = $conn->query("SELECT COUNT(*) AS total_absensi_guru FROM absensi_guru");
     $total_absensi_guru = $stmt_absensi_guru->fetch(PDO::FETCH_ASSOC)['total_absensi_guru'];
 
     // Jumlah Absensi Siswa
-    $stmt_absensi_siswa = $conn->query("SELECT COUNT(*) AS total_absensi_siswa FROM Absensi_siswa");
+    $stmt_absensi_siswa = $conn->query("SELECT COUNT(*) AS total_absensi_siswa FROM absensi_siswa");
     $total_absensi_siswa = $stmt_absensi_siswa->fetch(PDO::FETCH_ASSOC)['total_absensi_siswa'];
 } catch (\PDOException $e) {
     echo "<script>alert('Error saat mengambil data statistik: " . htmlspecialchars($e->getMessage()) . "');</script>";
@@ -199,7 +200,7 @@ try {
                                 labels: [
                                     <?php
                                     try {
-                                        $stmt_kelas = $conn->query("SELECT nama_kelas FROM Kelas");
+                                        $stmt_kelas = $conn->query("SELECT nama_kelas FROM kelas");
                                         $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_COLUMN);
                                         echo "'" . implode("','", $kelas_list) . "'";
                                     } catch (\PDOException $e) {
@@ -214,7 +215,7 @@ try {
                                         try {
                                             $stmt_siswa_per_kelas = $conn->query("
                                 SELECT COUNT(*) AS jumlah_siswa 
-                                FROM Siswa 
+                                FROM siswa 
                                 GROUP BY id_kelas
                             ");
                                             $jumlah_siswa = $stmt_siswa_per_kelas->fetchAll(PDO::FETCH_COLUMN);
@@ -276,9 +277,9 @@ try {
                                 k.nama_kelas, 
                                 COUNT(s.id_siswa) AS total_siswa, 
                                 SUM(CASE WHEN a.status_kehadiran = 'Hadir' THEN 1 ELSE 0 END) AS total_hadir
-                            FROM Kelas k
-                            LEFT JOIN Siswa s ON k.id_kelas = s.id_kelas
-                            LEFT JOIN Absensi_Siswa a ON s.id_siswa = a.id_siswa
+                            FROM kelas k
+                            LEFT JOIN siswa s ON k.id_kelas = s.id_kelas
+                            LEFT JOIN absensi_siswa a ON s.id_siswa = a.id_siswa
                             GROUP BY k.id_kelas
                             ORDER BY total_hadir DESC
                         ");

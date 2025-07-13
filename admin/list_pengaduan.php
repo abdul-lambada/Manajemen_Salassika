@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_pengaduan'])) {
     $status = $_POST['status'];
 
     try {
-        $stmt = $conn->prepare("UPDATE Pengaduan SET status = :status WHERE id_pengaduan = :id_pengaduan");
+        $stmt = $conn->prepare("UPDATE pengaduan SET status = :status WHERE id_pengaduan = :id_pengaduan");
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':id_pengaduan', $id_pengaduan);
         $stmt->execute();
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_pengaduan'])) {
     }
 }
 
-$stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM Pengaduan ORDER BY tanggal_pengaduan DESC LIMIT $limit OFFSET $offset");
+$stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM pengaduan ORDER BY tanggal_pengaduan DESC LIMIT $limit OFFSET $offset");
 $pengaduan_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get total number of rows and compute total pages

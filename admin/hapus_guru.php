@@ -12,14 +12,29 @@ if (isset($_GET['id'])) {
     $id_guru = $_GET['id'];
 
     try {
-        $stmt = $conn->prepare("DELETE FROM Guru WHERE id_guru = :id_guru");
-        $stmt->bindParam(':id_guru', $id_guru);
-        $stmt->execute();
+        $conn->beginTransaction();
+        
+        // Ambil user_id dari guru
+        $stmt_get = $conn->prepare("SELECT user_id FROM guru WHERE id_guru = ?");
+        $stmt_get->execute([$id_guru]);
+        $guru = $stmt_get->fetch(PDO::FETCH_ASSOC);
+        
+        if ($guru && $guru['user_id']) {
+            // Hapus data dari tabel users
+            $stmt_user = $conn->prepare("DELETE FROM users WHERE id = ?");
+            $stmt_user->execute([$guru['user_id']]);
+        }
+        
+        // Hapus data dari tabel guru
+        $stmt = $conn->prepare("DELETE FROM guru WHERE id_guru = ?");
+        $stmt->execute([$id_guru]);
 
+        $conn->commit();
         // Redirect ke halaman list guru dengan status success
         header("Location: list_guru.php?status=delete_success");
         exit();
     } catch (\PDOException $e) {
+        $conn->rollBack();
         // Redirect ke halaman list guru dengan status error
         header("Location: list_guru.php?status=error");
         exit();

@@ -138,10 +138,10 @@ $stmt = $conn->query("SELECT * FROM users ORDER BY name");
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Ambil data siswa dan guru untuk dropdown
-$stmt_siswa = $conn->query("SELECT id_siswa, nama_siswa, nis, nisn FROM siswa ORDER BY nama_siswa");
+$stmt_siswa = $conn->query("SELECT s.id_siswa, s.nama_siswa, s.nis, s.nisn, u.uid FROM siswa s LEFT JOIN users u ON s.user_id = u.id WHERE s.user_id IS NOT NULL ORDER BY s.nama_siswa");
 $siswa_list = $stmt_siswa->fetchAll(PDO::FETCH_ASSOC);
 
-$stmt_guru = $conn->query("SELECT id_guru, nama_guru, nip FROM guru ORDER BY nama_guru");
+$stmt_guru = $conn->query("SELECT g.id_guru, g.nama_guru, g.nip, u.uid FROM guru g LEFT JOIN users u ON g.user_id = u.id WHERE g.user_id IS NOT NULL ORDER BY g.nama_guru");
 $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -194,8 +194,7 @@ $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
                                         <option value="">Pilih Siswa</option>
                                         <?php foreach ($siswa_list as $siswa): ?>
                                             <option value="<?php echo $siswa['id_siswa']; ?>" 
-                                                    data-nis="<?php echo $siswa['nis']; ?>" 
-                                                    data-nisn="<?php echo $siswa['nisn']; ?>"
+                                                    data-uid="<?php echo $siswa['uid']; ?>" 
                                                     data-nama="<?php echo $siswa['nama_siswa']; ?>">
                                                 <?php echo $siswa['nama_siswa']; ?> (NIS: <?php echo $siswa['nis']; ?>)
                                             </option>
@@ -209,7 +208,7 @@ $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
                                         <option value="">Pilih Guru</option>
                                         <?php foreach ($guru_list as $guru): ?>
                                             <option value="<?php echo $guru['id_guru']; ?>" 
-                                                    data-nip="<?php echo $guru['nip']; ?>"
+                                                    data-uid="<?php echo $guru['uid']; ?>"
                                                     data-nama="<?php echo $guru['nama_guru']; ?>">
                                                 <?php echo $guru['nama_guru']; ?> (NIP: <?php echo $guru['nip']; ?>)
                                             </option>
@@ -320,9 +319,9 @@ document.getElementById('user_type').addEventListener('change', function() {
 document.getElementById('siswa_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {
-        const nis = selectedOption.getAttribute('data-nis');
+        const uid = selectedOption.getAttribute('data-uid');
         const nama = selectedOption.getAttribute('data-nama');
-        document.getElementById('user_id').value = nis;
+        document.getElementById('user_id').value = uid;
         document.getElementById('user_name').value = nama;
     }
 });
@@ -330,9 +329,9 @@ document.getElementById('siswa_id').addEventListener('change', function() {
 document.getElementById('guru_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {
-        const nip = selectedOption.getAttribute('data-nip');
+        const uid = selectedOption.getAttribute('data-uid');
         const nama = selectedOption.getAttribute('data-nama');
-        document.getElementById('user_id').value = nip;
+        document.getElementById('user_id').value = uid;
         document.getElementById('user_name').value = nama;
     }
 });

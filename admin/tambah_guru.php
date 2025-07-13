@@ -8,31 +8,42 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Ambil data dari form
-    $nama_guru = $_POST['nama_guru'];
-    $nip = $_POST['nip'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash password
-    $jenis_kelamin = $_POST['jenis_kelamin'];
-    $tanggal_lahir = $_POST['tanggal_lahir'];
-    $alamat = $_POST['alamat'];
+    try {
+        $conn->beginTransaction();
+        
+        // Ambil data dari form
+        $nama_guru = $_POST['nama_guru'];
+        $nip = $_POST['nip'];
+        $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash password
+        $jenis_kelamin = $_POST['jenis_kelamin'];
+        $tanggal_lahir = $_POST['tanggal_lahir'];
+        $alamat = $_POST['alamat'];
 
-    // Simpan data ke database
-    $stmt = $conn->prepare("INSERT INTO Guru (nama_guru, nip, password, jenis_kelamin, tanggal_lahir, alamat) VALUES (:nama_guru, :nip, :password, :jenis_kelamin, :tanggal_lahir, :alamat)");
-    $stmt->bindParam(':nama_guru', $nama_guru);
-    $stmt->bindParam(':nip', $nip);
-    $stmt->bindParam(':password', $password);
-    $stmt->bindParam(':jenis_kelamin', $jenis_kelamin);
-    $stmt->bindParam(':tanggal_lahir', $tanggal_lahir);
-    $stmt->bindParam(':alamat', $alamat);
+        // Validasi NIP unik
+        $check_nip = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
+        $check_nip->execute(array($nip));
+        
+        if ($check_nip->rowCount() > 0) {
+            throw new Exception("NIP sudah digunakan");
+        }
 
-    if ($stmt->execute()) {
+        // Insert ke tabel users terlebih dahulu
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
+        $stmt_user->execute(array($nama_guru, $password, $nip));
+        $user_id = $conn->lastInsertId();
+
+        // Simpan data ke tabel guru dengan user_id
+        $stmt = $conn->prepare("INSERT INTO guru (nama_guru, nip, password, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute(array($nama_guru, $nip, $password, $jenis_kelamin, $tanggal_lahir, $alamat, $user_id));
+
+        $conn->commit();
         // Redirect ke halaman list guru dengan status success
         header("Location: list_guru.php?status=add_success");
         exit();
-    } else {
-        // Redirect ke halaman list guru dengan status error
-        header("Location: list_guru.php?status=error");
-        exit();
+        
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $error_message = $e->getMessage();
     }
 }
 ?>
@@ -64,6 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <h6 class="m-0 font-weight-bold text-primary">Form Tambah Guru</h6>
                             </div>
                             <div class="card-body">
+                                <?php if (!empty($error_message)): ?>
+                                    <div class="alert alert-danger">
+                                        <?php echo htmlspecialchars($error_message); ?>
+                                    </div>
+                                <?php endif; ?>
+                                
                                 <form method="POST" action="">
                                     <label>Nama Guru:</label>
                                     <input type="text" name="nama_guru" class="form-control" required><br>

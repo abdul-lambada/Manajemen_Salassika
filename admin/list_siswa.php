@@ -13,7 +13,7 @@ $offset = ($page - 1) * $limit;
 // Ambil total data
 $stmt_total = $conn->query("
     SELECT COUNT(*) AS total 
-    FROM Siswa s
+    FROM siswa s
     JOIN kelas k ON s.id_kelas = k.id_kelas
 ");
 $totalRecords = $stmt_total->fetch(PDO::FETCH_ASSOC)['total'];
@@ -23,13 +23,15 @@ $totalPages = ceil($totalRecords / $limit);
 $stmt = $conn->prepare("
     SELECT 
         s.id_siswa, 
+        s.nisn,
+        s.nama_siswa,
         s.nis, 
         s.jenis_kelamin, 
         s.tanggal_lahir, 
         s.alamat, 
         k.nama_kelas, 
         u.name AS user_name
-    FROM Siswa s
+    FROM siswa s
     JOIN kelas k ON s.id_kelas = k.id_kelas
     LEFT JOIN users u ON s.user_id = u.id
     LIMIT :limit OFFSET :offset
@@ -102,6 +104,8 @@ switch ($status) {
                         <thead>
                             <tr>
                                 <th>ID Siswa</th>
+                                <th>NISN</th>
+                                <th>Nama Siswa</th>
                                 <th>NIS</th>
                                 <th>Jenis Kelamin</th>
                                 <th>Tanggal Lahir</th>
@@ -115,6 +119,8 @@ switch ($status) {
                             <?php foreach ($siswa_list as $siswa): ?>
                                 <tr>
                                     <td><?= htmlspecialchars($siswa['id_siswa']) ?></td>
+                                    <td><?= htmlspecialchars($siswa['nisn']) ?></td>
+                                    <td><?= htmlspecialchars($siswa['nama_siswa']) ?></td>
                                     <td><?= htmlspecialchars($siswa['nis']) ?></td>
                                     <td><?= htmlspecialchars($siswa['jenis_kelamin']) ?></td>
                                     <td><?= htmlspecialchars($siswa['tanggal_lahir']) ?></td>

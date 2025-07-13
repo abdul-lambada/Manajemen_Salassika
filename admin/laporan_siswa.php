@@ -15,7 +15,7 @@ $tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : '';
 $id_kelas = isset($_GET['id_kelas']) ? $_GET['id_kelas'] : '';
 
 // Query untuk mengambil daftar kelas
-$stmt_kelas = $conn->prepare("SELECT * FROM Kelas");
+$stmt_kelas = $conn->prepare("SELECT * FROM kelas");
 $stmt_kelas->execute();
 $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
 
@@ -23,14 +23,13 @@ $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
 $query = "
     SELECT 
         asis.tanggal,
-        u.name AS nama_siswa,
+        s.nama_siswa,
         k.nama_kelas,
         asis.status_kehadiran AS status_kehadiran,
         asis.catatan
-    FROM Absensi_Siswa asis
-    JOIN Siswa s ON asis.id_siswa = s.id_siswa
-    JOIN Kelas k ON s.id_kelas = k.id_kelas
-    LEFT JOIN users u ON s.user_id = u.id
+    FROM absensi_siswa asis
+    JOIN siswa s ON asis.id_siswa = s.id_siswa
+    JOIN kelas k ON s.id_kelas = k.id_kelas
     WHERE 1=1
 ";
 $params = [];

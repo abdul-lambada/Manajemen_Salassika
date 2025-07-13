@@ -13,7 +13,7 @@ include '../includes/db.php';
 $id_pengaduan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Query data pengaduan
-$stmt = $conn->prepare("SELECT * FROM Pengaduan WHERE id_pengaduan = :id_pengaduan");
+$stmt = $conn->prepare("SELECT * FROM pengaduan WHERE id_pengaduan = :id_pengaduan");
 $stmt->bindParam(':id_pengaduan', $id_pengaduan);
 $stmt->execute();
 $pengaduan = $stmt->fetch(PDO::FETCH_ASSOC);

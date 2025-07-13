@@ -1,120 +1,142 @@
 <?php
 /**
- * Konfigurasi Fingerprint System
- * File ini berisi pengaturan untuk sistem fingerprint
+ * Konfigurasi Fingerprint Device
+ * File ini berisi konfigurasi untuk perangkat fingerprint X100-C
  */
 
-// Konfigurasi perangkat fingerprint
-define('FINGERPRINT_IP', '192.168.1.201'); // Ganti dengan IP perangkat fingerprint Anda
+// IP Address default perangkat fingerprint
+define('FINGERPRINT_IP', '192.168.1.201');
+
+// Port default perangkat fingerprint
 define('FINGERPRINT_PORT', 4370);
-define('FINGERPRINT_TIMEOUT', 5); // Timeout dalam detik
 
-// Konfigurasi sinkronisasi
-define('AUTO_SYNC_ENABLED', true); // Aktifkan sinkronisasi otomatis
-define('SYNC_INTERVAL', 300); // Interval sinkronisasi dalam detik (5 menit)
+// Timeout koneksi (dalam detik)
+define('FINGERPRINT_TIMEOUT', 5);
 
-// Konfigurasi mapping
-define('MAPPING_SISWA_BY_NIS', true); // Mapping siswa berdasarkan NIS
-define('MAPPING_SISWA_BY_NISN', true); // Mapping siswa berdasarkan NISN
-define('MAPPING_GURU_BY_NIP', true); // Mapping guru berdasarkan NIP
+// Interval sinkronisasi otomatis (dalam detik)
+define('SYNC_INTERVAL', 300); // 5 menit
 
-// Konfigurasi status kehadiran
-define('STATUS_MASUK', 0); // Status masuk dari fingerprint
-define('STATUS_KELUAR', 1); // Status keluar dari fingerprint
+// Path log file
+define('FINGERPRINT_LOG_FILE', __DIR__ . '/../logs/fingerprint_sync.log');
 
-// Konfigurasi mode verifikasi
-define('VERIFICATION_FINGERPRINT', 1);
-define('VERIFICATION_PIN', 2);
-define('VERIFICATION_CARD', 3);
+// Konfigurasi database untuk log
+define('LOG_TABLE', 'fingerprint_logs');
 
-// Fungsi untuk mendapatkan konfigurasi fingerprint
-function getFingerprintConfig() {
-    return [
-        'ip' => FINGERPRINT_IP,
-        'port' => FINGERPRINT_PORT,
-        'timeout' => FINGERPRINT_TIMEOUT,
-        'auto_sync' => AUTO_SYNC_ENABLED,
-        'sync_interval' => SYNC_INTERVAL
-    ];
-}
+// Status koneksi
+define('CONNECTION_STATUS', [
+    'SUCCESS' => 'success',
+    'ERROR' => 'error',
+    'WARNING' => 'warning'
+]);
 
-// Fungsi untuk mendapatkan mapping configuration
-function getMappingConfig() {
-    return [
-        'siswa_by_nis' => MAPPING_SISWA_BY_NIS,
-        'siswa_by_nisn' => MAPPING_SISWA_BY_NISN,
-        'guru_by_nip' => MAPPING_GURU_BY_NIP
-    ];
-}
+// Mode verifikasi
+define('VERIFICATION_MODES', [
+    1 => 'Fingerprint',
+    2 => 'PIN',
+    3 => 'Card',
+    4 => 'Face',
+    5 => 'Password'
+]);
 
-// Fungsi untuk mendapatkan status configuration
-function getStatusConfig() {
-    return [
-        'masuk' => STATUS_MASUK,
-        'keluar' => STATUS_KELUAR
-    ];
-}
+// Status kehadiran
+define('ATTENDANCE_STATUS', [
+    0 => 'Masuk',
+    1 => 'Keluar'
+]);
 
-// Fungsi untuk mendapatkan verification mode configuration
-function getVerificationConfig() {
-    return [
-        'fingerprint' => VERIFICATION_FINGERPRINT,
-        'pin' => VERIFICATION_PIN,
-        'card' => VERIFICATION_CARD
-    ];
-}
-
-// Fungsi untuk mengkonversi status fingerprint ke teks
-function convertFingerprintStatus($status) {
-    $statusConfig = getStatusConfig();
-    return $status == $statusConfig['masuk'] ? 'Masuk' : 'Keluar';
-}
-
-// Fungsi untuk mengkonversi mode verifikasi ke teks
-function convertVerificationMode($mode) {
-    $verificationConfig = getVerificationConfig();
+/**
+ * Fungsi untuk menulis log fingerprint
+ */
+function writeFingerprintLog($action, $message, $status = 'success') {
+    global $conn;
     
-    switch ($mode) {
-        case $verificationConfig['fingerprint']:
-            return 'Fingerprint';
-        case $verificationConfig['pin']:
-            return 'PIN';
-        case $verificationConfig['card']:
-            return 'Card';
-        default:
-            return 'Unknown';
+    try {
+        $stmt = $conn->prepare("INSERT INTO " . LOG_TABLE . " (action, message, status) VALUES (?, ?, ?)");
+        $stmt->execute([$action, $message, $status]);
+        
+        // Juga tulis ke file log
+        $timestamp = date('Y-m-d H:i:s');
+        $log_message = "[$timestamp] [$status] [$action] $message" . PHP_EOL;
+        file_put_contents(FINGERPRINT_LOG_FILE, $log_message, FILE_APPEND | LOCK_EX);
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Error writing fingerprint log: " . $e->getMessage());
+        return false;
     }
 }
 
-// Fungsi untuk mengecek apakah IP fingerprint valid
-function isValidFingerprintIP($ip) {
-    return filter_var($ip, FILTER_VALIDATE_IP) !== false;
-}
-
-// Fungsi untuk mengecek koneksi fingerprint
-function checkFingerprintConnection($ip = null, $port = null) {
-    if ($ip === null) {
-        $config = getFingerprintConfig();
-        $ip = $config['ip'];
-        $port = $config['port'];
-    }
-    
-    if (!isValidFingerprintIP($ip)) {
-        return ['status' => false, 'message' => 'IP Address tidak valid'];
+/**
+ * Fungsi untuk mendapatkan status koneksi device
+ */
+function getDeviceStatus($ip = null) {
+    if (!$ip) {
+        $ip = FINGERPRINT_IP;
     }
     
     try {
         require_once __DIR__ . '/zklib/zklibrary.php';
-        $zk = new ZKLibrary($ip, $port);
+        $zk = new ZKLibrary($ip, FINGERPRINT_PORT);
         
         if ($zk->connect()) {
             $zk->disconnect();
-            return ['status' => true, 'message' => 'Koneksi berhasil'];
+            return [
+                'status' => 'connected',
+                'message' => 'Device terhubung',
+                'ip' => $ip
+            ];
         } else {
-            return ['status' => false, 'message' => 'Gagal terhubung ke perangkat'];
+            return [
+                'status' => 'disconnected',
+                'message' => 'Device tidak dapat dihubungi',
+                'ip' => $ip
+            ];
         }
     } catch (Exception $e) {
-        return ['status' => false, 'message' => 'Error: ' . $e->getMessage()];
+        return [
+            'status' => 'error',
+            'message' => 'Error: ' . $e->getMessage(),
+            'ip' => $ip
+        ];
+    }
+}
+
+/**
+ * Fungsi untuk mendapatkan statistik fingerprint
+ */
+function getFingerprintStats() {
+    global $conn;
+    
+    try {
+        // Total user di device
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM users");
+        $stmt->execute();
+        $total_users = $stmt->fetchColumn();
+        
+        // Total kehadiran hari ini
+        $today = date('Y-m-d');
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM tbl_kehadiran WHERE DATE(timestamp) = ?");
+        $stmt->execute([$today]);
+        $today_attendance = $stmt->fetchColumn();
+        
+        // Total kehadiran bulan ini
+        $month = date('Y-m');
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM tbl_kehadiran WHERE DATE_FORMAT(timestamp, '%Y-%m') = ?");
+        $stmt->execute([$month]);
+        $month_attendance = $stmt->fetchColumn();
+        
+        // Status koneksi device
+        $device_status = getDeviceStatus();
+        
+        return [
+            'total_users' => $total_users,
+            'today_attendance' => $today_attendance,
+            'month_attendance' => $month_attendance,
+            'device_status' => $device_status
+        ];
+    } catch (Exception $e) {
+        writeFingerprintLog('GET_STATS', 'Error: ' . $e->getMessage(), 'error');
+        return false;
     }
 }
 ?>
