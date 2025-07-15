@@ -335,7 +335,7 @@ try {
                                                 <td>
                                                     <input type="text" name="catatan[<?php echo $guru['id_guru']; ?>]" 
                                                            class="form-control" placeholder="Catatan" 
-                                                           value="<?php echo htmlspecialchars($guru['catatan_manual'] ?? ''); ?>">
+                                                           value="<?php echo htmlspecialchars(isset($guru['catatan_manual']) ? $guru['catatan_manual'] : ''); ?>">
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

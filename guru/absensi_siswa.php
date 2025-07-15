@@ -384,7 +384,7 @@ try {
                                             <?php foreach ($siswa_list as $siswa): ?>
                                                 <tr>
                                                     <td>
-                                                        <strong><?php echo htmlspecialchars($siswa['nama_siswa'] ?? 'Tidak ada nama'); ?></strong>
+                                                        <strong><?php echo htmlspecialchars(isset($siswa['nama_siswa']) ? $siswa['nama_siswa'] : 'Tidak ada nama'); ?></strong>
                                                         <br>
                                                         <small class="text-muted"><?php echo htmlspecialchars($siswa['jenis_kelamin']); ?></small>
                                                     </td>
@@ -412,7 +412,7 @@ try {
                                                     <td>
                                                         <input type="text" name="catatan[<?php echo $siswa['id_siswa']; ?>]" 
                                                                class="form-control" placeholder="Catatan" 
-                                                               value="<?php echo htmlspecialchars($siswa['catatan_manual'] ?? ''); ?>">
+                                                               value="<?php echo htmlspecialchars(isset($siswa['catatan_manual']) ? $siswa['catatan_manual'] : ''); ?>">
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>

@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
     $device_port = 4370; // Port default perangkat fingerprint
 
     try {
-        // Inisialisasi koneksi ke perangkat
+        // Inisialisasi koneksi ke perangkat (pendekatan sederhana seperti test.php)
         $zk = new ZKLibrary($device_ip, $device_port);
 
         // Coba terhubung ke perangkat
@@ -193,15 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
         $connection_message = 'Terjadi kesalahan: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES);
         $connection_class = 'alert-danger';
     }
-
-    // Simpan status koneksi ke session
-    $_SESSION['connection_message'] = $connection_message;
-    $_SESSION['connection_class'] = $connection_class;
-    $_SESSION['synchronized_data'] = $synchronized_data;
-
-    // Redirect ke halaman yang sama untuk menghindari resubmission form
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
+    // Jangan redirect, langsung tampilkan hasil
 }
 ?>
 <div id="content-wrapper" class="d-flex flex-column">

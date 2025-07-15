@@ -118,7 +118,7 @@ switch ($status) {
                                                 <td><?php echo htmlspecialchars($guru['jenis_kelamin']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['tanggal_lahir']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['alamat']); ?></td>
-                                                <td><?php echo htmlspecialchars($guru['user_name'] ?? 'Tidak ada user'); ?></td>
+                                                <td><?php echo htmlspecialchars(isset($guru['user_name']) ? $guru['user_name'] : 'Tidak ada user'); ?></td>
                                                 <td>
                                                     <a href="edit_guru.php?id=<?php echo htmlspecialchars($guru['id_guru']); ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
                                                     <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal<?php echo $guru['id_guru']; ?>"><i class="fas fa-trash"></i></a>

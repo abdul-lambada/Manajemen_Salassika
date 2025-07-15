@@ -105,17 +105,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         foreach ($fingerprint_users as $uid => $user) {
                             $user_id = $user[0];
                             $user_name = $user[1];
-                            
-                            // Cek apakah sudah ada di database
-                            $check_stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE uid = ?");
-                            $check_stmt->execute([$uid]);
-                            
-                            if ($check_stmt->fetchColumn() == 0) {
-                                // Insert ke database
-                                $insert_stmt = $conn->prepare("INSERT INTO users (uid, name, role) VALUES (?, ?, '')");
-                                $insert_stmt->execute([$uid, $user_name]);
-                                $synced_count++;
+                            $privilege = isset($user[2]) ? $user[2] : 0;
+                            // Mapping privilege ke role sistem
+                            if ($privilege == 0) {
+                                $role = 'guru';
+                            } elseif ($privilege == 2) {
+                                $role = 'siswa';
+                            } elseif ($privilege == 14) {
+                                $role = 'admin';
+                            } else {
+                                $role = 'siswa';
                             }
+                            // Cek apakah sudah ada di database
+                            $check_stmt = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+                            $check_stmt->execute([$uid]);
+                            $user_db = $check_stmt->fetch(PDO::FETCH_ASSOC);
+                            if (!$user_db) {
+                                // Insert ke database
+                                $insert_stmt = $conn->prepare("INSERT INTO users (uid, name, role) VALUES (?, ?, ?)");
+                                $insert_stmt->execute([$uid, $user_name, $role]);
+                                $user_id_db = $conn->lastInsertId();
+                            } else {
+                                $user_id_db = $user_db['id'];
+                            }
+                            // Otomatis mapping ke siswa/guru jika UID fingerprint cocok dengan NIS (siswa) atau NIP (guru)
+                            if ($role === 'siswa') {
+                                $siswa_stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
+                                $siswa_stmt->execute([$uid]);
+                                $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+                                if ($siswa) {
+                                    // Update mapping user_id jika belum sesuai
+                                    $update_stmt = $conn->prepare("UPDATE siswa SET user_id = ? WHERE id_siswa = ? AND (user_id IS NULL OR user_id != ?)");
+                                    $update_stmt->execute([$user_id_db, $siswa['id_siswa'], $user_id_db]);
+                                }
+                            } elseif ($role === 'guru') {
+                                $guru_stmt = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
+                                $guru_stmt->execute([$uid]);
+                                $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+                                if ($guru) {
+                                    // Update mapping user_id jika belum sesuai
+                                    $update_stmt = $conn->prepare("UPDATE guru SET user_id = ? WHERE id_guru = ? AND (user_id IS NULL OR user_id != ?)");
+                                    $update_stmt->execute([$user_id_db, $guru['id_guru'], $user_id_db]);
+                                }
+                            }
+                            // Jika tidak bisa dimapping, bisa tambahkan notifikasi/log jika perlu
                         }
                         
                         $message = "Sinkronisasi selesai. $synced_count pengguna baru ditambahkan.";
@@ -133,6 +166,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Handle map/unmap POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_POST['action'] === 'map_guru' && !empty($_POST['id_guru']) && !empty($_POST['uid'])) {
+        $stmt = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $stmt->execute([$_POST['uid']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            $update = $conn->prepare("UPDATE guru SET user_id = ? WHERE id_guru = ?");
+            $update->execute([$user['id'], $_POST['id_guru']]);
+        }
+    } elseif ($_POST['action'] === 'unmap_guru' && !empty($_POST['id_guru'])) {
+        $update = $conn->prepare("UPDATE guru SET user_id = NULL WHERE id_guru = ?");
+        $update->execute([$_POST['id_guru']]);
+    } elseif ($_POST['action'] === 'map_siswa' && !empty($_POST['id_siswa']) && !empty($_POST['uid'])) {
+        $stmt = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $stmt->execute([$_POST['uid']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            $update = $conn->prepare("UPDATE siswa SET user_id = ? WHERE id_siswa = ?");
+            $update->execute([$user['id'], $_POST['id_siswa']]);
+        }
+    } elseif ($_POST['action'] === 'unmap_siswa' && !empty($_POST['id_siswa'])) {
+        $update = $conn->prepare("UPDATE siswa SET user_id = NULL WHERE id_siswa = ?");
+        $update->execute([$_POST['id_siswa']]);
+    }
+}
+
 // Ambil data pengguna dari database
 $stmt = $conn->query("SELECT * FROM users ORDER BY name");
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -143,6 +203,15 @@ $siswa_list = $stmt_siswa->fetchAll(PDO::FETCH_ASSOC);
 
 $stmt_guru = $conn->query("SELECT g.id_guru, g.nama_guru, g.nip, u.uid FROM guru g LEFT JOIN users u ON g.user_id = u.id WHERE g.user_id IS NOT NULL ORDER BY g.nama_guru");
 $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
+
+// Ambil UID fingerprint yang belum termapping ke guru/siswa
+$uid_used = [];
+foreach ($siswa_list as $s) { if ($s['uid']) $uid_used[] = $s['uid']; }
+foreach ($guru_list as $g) { if ($g['uid']) $uid_used[] = $g['uid']; }
+$uid_used = array_unique($uid_used);
+$all_uid_stmt = $conn->query("SELECT uid FROM users ORDER BY uid");
+$all_uid = $all_uid_stmt->fetchAll(PDO::FETCH_COLUMN);
+$uid_available = array_diff($all_uid, $uid_used);
 ?>
 
 <div id="content-wrapper" class="d-flex flex-column">
@@ -251,44 +320,95 @@ $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
             <!-- Tabel Pengguna -->
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Daftar Pengguna Fingerprint</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>UID</th>
-                                            <th>Nama</th>
-                                            <th>Role</th>
-                                            <th>Tanggal Dibuat</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($users as $user): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($user['uid']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['name']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['role']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['created_at']); ?></td>
-                                            <td>
-                                                <form method="POST" action="" style="display: inline;">
-                                                    <input type="hidden" name="action" value="delete_user">
-                                                    <input type="hidden" name="user_id" value="<?php echo $user['uid']; ?>">
-                                                    <input type="hidden" name="device_ip" value="<?php echo FINGERPRINT_IP; ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm" 
-                                                            onclick="return confirm('Yakin ingin menghapus pengguna ini?')">
-                                                        <i class="fas fa-trash"></i> Hapus
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
+                    <ul class="nav nav-tabs mb-3" id="fingerprintTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="guru-tab" data-toggle="tab" href="#guru" role="tab">Daftar Guru</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="siswa-tab" data-toggle="tab" href="#siswa" role="tab">Daftar Siswa</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="fingerprintTabContent">
+                        <div class="tab-pane fade show active" id="guru" role="tabpanel">
+                            <div class="card mb-4">
+                                <div class="card-header">Guru</div>
+                                <div class="card-body table-responsive-sm">
+                                    <table class="table table-bordered">
+                                        <thead><tr><th>No</th><th>Nama Guru</th><th>NIP</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
+                                        <tbody>
+                                        <?php foreach ($guru_list as $i => $guru): ?>
+                                            <tr>
+                                                <td><?= $i+1 ?></td>
+                                                <td><?= htmlspecialchars($guru['nama_guru']) ?></td>
+                                                <td><?= htmlspecialchars($guru['nip']) ?></td>
+                                                <td><?= $guru['uid'] ? htmlspecialchars($guru['uid']) : '-' ?></td>
+                                                <td>
+                                                    <?php if ($guru['uid']): ?>
+                                                        <form method="POST" action="" style="display:inline;">
+                                                            <input type="hidden" name="action" value="unmap_guru">
+                                                            <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
+                                                            <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <form method="POST" action="" style="display:inline;">
+                                                            <input type="hidden" name="action" value="map_guru">
+                                                            <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
+                                                            <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
+                                                                <option value="">Pilih UID</option>
+                                                                <?php foreach ($uid_available as $uid): ?>
+                                                                    <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                            <button type="submit" class="btn btn-primary btn-sm">Map</button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
                                         <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="siswa" role="tabpanel">
+                            <div class="card mb-4">
+                                <div class="card-header">Siswa</div>
+                                <div class="card-body table-responsive-sm">
+                                    <table class="table table-bordered">
+                                        <thead><tr><th>No</th><th>Nama Siswa</th><th>NIS</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
+                                        <tbody>
+                                        <?php foreach ($siswa_list as $i => $siswa): ?>
+                                            <tr>
+                                                <td><?= $i+1 ?></td>
+                                                <td><?= htmlspecialchars($siswa['nama_siswa']) ?></td>
+                                                <td><?= htmlspecialchars($siswa['nis']) ?></td>
+                                                <td><?= $siswa['uid'] ? htmlspecialchars($siswa['uid']) : '-' ?></td>
+                                                <td>
+                                                    <?php if ($siswa['uid']): ?>
+                                                        <form method="POST" action="" style="display:inline;">
+                                                            <input type="hidden" name="action" value="unmap_siswa">
+                                                            <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
+                                                            <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <form method="POST" action="" style="display:inline;">
+                                                            <input type="hidden" name="action" value="map_siswa">
+                                                            <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
+                                                            <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
+                                                                <option value="">Pilih UID</option>
+                                                                <?php foreach ($uid_available as $uid): ?>
+                                                                    <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                            <button type="submit" class="btn btn-primary btn-sm">Map</button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>

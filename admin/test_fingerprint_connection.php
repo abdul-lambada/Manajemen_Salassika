@@ -13,18 +13,18 @@ $device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : FINGERPRINT_IP;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_connection'])) {
     try {
+        // Pendekatan sederhana seperti test.php
         require '../includes/zklib/zklibrary.php';
         $zk = new ZKLibrary($device_ip, 4370);
         
-        // Connect sekali saja
-        $is_connected = $zk->connect();
+        // Test 1: Koneksi dasar
         $test_results['connection'] = [
             'name' => 'Koneksi Dasar',
-            'status' => $is_connected ? 'SUCCESS' : 'FAILED',
-            'message' => $is_connected ? 'Berhasil terhubung ke perangkat' : 'Gagal terhubung ke perangkat'
+            'status' => $zk->connect() ? 'SUCCESS' : 'FAILED',
+            'message' => $zk->connect() ? 'Berhasil terhubung ke perangkat' : 'Gagal terhubung ke perangkat'
         ];
         
-        if ($is_connected) {
+        if ($zk->connect()) {
             // Test 2: Ping device
             $ping_result = $zk->ping();
             $test_results['ping'] = [
@@ -212,12 +212,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_connection'])) {
                                     
                                     <?php if ($failed_count > 0 || $error_count > 0): ?>
                                         <div class="alert alert-warning">
-                                            <strong>Troubleshooting:</strong><br>
-                                            1. Periksa IP address perangkat fingerprint<br>
-                                            2. Pastikan perangkat terhubung ke jaringan yang sama<br>
-                                            3. Cek firewall dan port 4370<br>
-                                            4. Restart perangkat fingerprint jika diperlukan
+                                            <strong>Troubleshooting untuk X100-C:</strong><br>
+                                            1. <strong>Periksa IP Address:</strong> Pastikan IP address benar (biasanya 192.168.1.201 atau 192.168.1.100)<br>
+                                            2. <strong>Koneksi Jaringan:</strong> Pastikan komputer dan fingerprint terhubung ke jaringan yang sama<br>
+                                            3. <strong>Port 4370:</strong> Pastikan port 4370 tidak diblokir firewall<br>
+                                            4. <strong>Power Supply:</strong> Pastikan fingerprint mendapat power yang cukup<br>
+                                            5. <strong>Restart Device:</strong> Restart fingerprint dan tunggu 30 detik<br>
+                                            6. <strong>Kabel LAN:</strong> Periksa kabel LAN dan koneksi RJ45<br>
+                                            7. <strong>Ping Test:</strong> Coba ping IP fingerprint dari command prompt<br>
+                                            8. <strong>Firmware:</strong> Periksa apakah firmware X100-C sudah terbaru<br>
+                                            9. <strong>Admin Mode:</strong> Pastikan fingerprint tidak dalam mode admin/enrollment<br>
+                                            10. <strong>Antivirus:</strong> Nonaktifkan sementara antivirus yang mungkin memblokir koneksi
                                         </div>
+                                        
+                                        <div class="alert alert-info">
+                                            <strong>Langkah Debug Lanjutan:</strong><br>
+                                            1. Cek log file di: <code><?php echo FINGERPRINT_LOG_FILE; ?></code><br>
+                                            2. Coba akses fingerprint via browser: <code>http://<?php echo $device_ip; ?></code><br>
+                                            3. Test dengan software ZKTeco Admin jika tersedia<br>
+                                            4. Periksa apakah fingerprint mendukung protokol ZKLib<br>
+                                            5. <strong>Extension Sockets:</strong> Jika socket test SKIPPED, aktifkan extension sockets di php.ini
+                                        </div>
+                                        
+                                        <?php if (isset($test_results['socket']) && $test_results['socket']['status'] === 'SKIPPED'): ?>
+                                        <div class="alert alert-warning">
+                                            <strong>Cara Mengaktifkan Extension Sockets:</strong><br>
+                                            1. Buka file <code>php.ini</code> di folder XAMPP (biasanya di <code>C:\xampp\php\php.ini</code>)<br>
+                                            2. Cari baris <code>;extension=sockets</code><br>
+                                            3. Hapus tanda semicolon (;) di depannya menjadi <code>extension=sockets</code><br>
+                                            4. Restart Apache di XAMPP Control Panel<br>
+                                            5. Refresh halaman ini untuk test ulang
+                                        </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>

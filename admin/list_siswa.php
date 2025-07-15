@@ -126,7 +126,7 @@ switch ($status) {
                                     <td><?= htmlspecialchars($siswa['tanggal_lahir']) ?></td>
                                     <td><?= htmlspecialchars($siswa['alamat']) ?></td>
                                     <td><?= htmlspecialchars($siswa['nama_kelas']) ?></td>
-                                    <td><?= htmlspecialchars($siswa['user_name'] ?? 'Tidak ada user') ?></td>
+                                    <td><?= htmlspecialchars(isset($siswa['user_name']) ? $siswa['user_name'] : 'Tidak ada user') ?></td>
                                     <td>
                                         <a href="edit_siswa.php?id=<?= $siswa['id_siswa'] ?>" 
                                            class="btn btn-warning btn-sm">

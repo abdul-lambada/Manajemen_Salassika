@@ -1,5 +1,5 @@
 <?php
-$title = "List Pengguna";
+$title = "List User Fingerprint Guru";
 $active_page = "list_users"; // Untuk menandai menu aktif di sidebar
 include '../templates/header.php';
 include '../templates/sidebar.php';
@@ -43,10 +43,9 @@ try {
 
         if (!$exists) {
             // Insert data jika UID belum ada
-            $insertStmt = $pdo->prepare("INSERT INTO users (uid, id, name, role, password) VALUES (:uid, :id, :name, :role, :password)");
+            $insertStmt = $pdo->prepare("INSERT INTO users (uid, name, role, password) VALUES (:uid, :name, :role, :password)");
             $insertStmt->execute([
                 'uid' => $uid,
-                'id' => $id,
                 'name' => $name,
                 'role' => $role,
                 'password' => $password
@@ -107,7 +106,7 @@ switch ($status) {
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
         <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List Users</h1>
+            <h1 class="h3 mb-0 text-gray-800">List User Fingerprint Guru</h1>
         </nav>
         <div class="container-fluid">
             <!-- Form to input device IP and port -->
@@ -147,35 +146,33 @@ switch ($status) {
                 <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Data Users</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">Data Siswa</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body table-responsive-sm">
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>No</th>
+                                        <th>Nama Guru</th>
+                                        <th>NIP</th>
                                         <th>UID</th>
-                                        <th>ID</th>
-                                        <th>Name</th>
+                                        <th>Nama User</th>
                                         <th>Role</th>
-                                        <th>Password</th>
-                                        <!-- <th>Aksi</th> -->
+                                        <th>Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
-                                    $no = $offset + 1;
+                                    $no = 1;
                                     foreach ($dbUsers as $user): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($no++); ?></td>
+                                            <td><?php echo htmlspecialchars($user['nama_guru']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['nip']); ?></td>
                                             <td><?php echo htmlspecialchars($user['uid']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['id']); ?></td>
                                             <td><?php echo htmlspecialchars($user['name']); ?></td>
                                             <td><?php echo htmlspecialchars($user['role']); ?></td>
-                                            <td><?php echo htmlspecialchars($user['password']); ?></td>
-                                            <!-- <td>
-                                                <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-trash"> Hapus</i></a>
-                                            </td> -->
+                                            <td><?php echo htmlspecialchars($user['created_at']); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
