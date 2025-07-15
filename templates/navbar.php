@@ -16,24 +16,17 @@
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">
                     <?php
-                    if (isset($_SESSION['admin']) && !empty($_SESSION['admin']['nama_guru'])) {
-                        echo htmlspecialchars($_SESSION['admin']['nama_guru']);
-                    } elseif (isset($_SESSION['guru']) && !empty($_SESSION['guru']['nama_guru'])) {
-                        echo htmlspecialchars($_SESSION['guru']['nama_guru']);
-                    } elseif (isset($_SESSION['user']['nama'])) {
-                        echo htmlspecialchars($_SESSION['user']['nama']);
-                    } else {
-                        echo 'Pengguna';
-                    }
+                    echo htmlspecialchars(isset($_SESSION['user']['name']) ? $_SESSION['user']['name'] : 'Pengguna');
                     ?>
                 </span>
                 <img class="img-profile rounded-circle"
-                    src="../assets/img/undraw_profile.svg" alt="Profil">
+                    src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '../' . $_SESSION['user']['avatar'] : '../assets/img/undraw_profile.svg'; ?>"
+                    alt="Profil">
             </a>
             <!-- Dropdown - User Information -->
             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                 aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="profil.php">
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     Profil
                 </a>

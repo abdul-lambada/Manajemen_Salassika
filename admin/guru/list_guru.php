@@ -1,4 +1,5 @@
 <?php
+use PhpOffice\PhpSpreadsheet\IOFactory;
 $title = "List Guru";
 $active_page = "list_guru"; // Untuk menandai menu aktif di sidebar
 include '../templates/header.php';
@@ -60,6 +61,45 @@ switch ($status) {
         $message = '';
         $alert_class = '';
         break;
+}
+
+// Proses import Excel jika ada upload
+if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
+    require_once '../vendor/phpoffice/phpspreadsheet/src/Bootstrap.php';
+    $file = $_FILES['excel_file']['tmp_name'];
+    $spreadsheet = IOFactory::load($file);
+    $sheet = $spreadsheet->getActiveSheet();
+    $rows = $sheet->toArray();
+    $header = array_map('strtolower', $rows[0]);
+    $success = 0; $fail = 0; $fail_msg = [];
+    for ($i = 1; $i < count($rows); $i++) {
+        $row = array_combine($header, $rows[$i]);
+        if (empty($row['nip']) || empty($row['nama guru'])) continue;
+        // Validasi NIP unik
+        $nip = $row['nip'];
+        $stmt = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
+        $stmt->execute([$nip]);
+        if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIP $nip sudah ada"; continue; }
+        // Insert ke users
+        $password = password_hash('123456', PASSWORD_DEFAULT);
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
+        $stmt_user->execute([$row['nama guru'], $password, $nip]);
+        $user_id = $conn->lastInsertId();
+        // Insert ke guru
+        $stmt_guru = $conn->prepare("INSERT INTO guru (nama_guru, nip, password, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt_guru->execute([
+            $row['nama guru'],
+            $nip,
+            $password,
+            isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
+            isset($row['tanggal lahir']) ? $row['tanggal lahir'] : '',
+            isset($row['alamat']) ? $row['alamat'] : '',
+            $user_id
+        ]);
+        $success++;
+    }
+    $message = "Import selesai. Berhasil: $success, Gagal: $fail" . ($fail ? (" (".implode(", ", $fail_msg).")") : '');
+    $alert_class = $fail ? 'alert-warning' : 'alert-success';
 }
 ?>
 <div id="content-wrapper" class="d-flex flex-column">

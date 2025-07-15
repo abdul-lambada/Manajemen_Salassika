@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Ambil data form
         $nisn = $_POST['nisn'];
         $nama_siswa = $_POST['nama_siswa'];
+        $uid = $_POST['uid'];
         $jenis_kelamin = $_POST['jenis_kelamin'];
         $tanggal_lahir = $_POST['tanggal_lahir'];
         $alamat = $_POST['alamat'];
@@ -30,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Validasi NISN unik
         $check_nisn = $conn->prepare("SELECT id_siswa FROM siswa WHERE nisn = ?");
         $check_nisn->execute(array($nisn));
-        
         if ($check_nisn->rowCount() > 0) {
             throw new Exception("NISN sudah digunakan");
         }
@@ -38,27 +38,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Validasi NIS unik
         $check_nis = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
         $check_nis->execute(array($nis));
-        
         if ($check_nis->rowCount() > 0) {
             throw new Exception("NIS sudah digunakan");
         }
 
-        // Insert ke tabel users terlebih dahulu
+        // Validasi UID unik di users
+        $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $check_uid->execute(array($uid));
+        if ($check_uid->rowCount() > 0) {
+            throw new Exception("UID sudah digunakan user lain");
+        }
+
+        // Insert ke tabel users
         $password = password_hash('123456', PASSWORD_DEFAULT); // Password default
         $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', ?)");
-        $stmt_user->execute(array($nama_siswa, $password, $nis));
+        $stmt_user->execute(array($nama_siswa, $password, $uid));
         $user_id = $conn->lastInsertId();
 
         // Insert ke tabel siswa
         $stmt = $conn->prepare("
             INSERT INTO siswa 
-            (nisn, nama_siswa, jenis_kelamin, tanggal_lahir, alamat, id_kelas, nis, user_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (nisn, jenis_kelamin, tanggal_lahir, alamat, id_kelas, nis, user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
-        
         $stmt->execute(array(
             $nisn,
-            $nama_siswa,
             $jenis_kelamin,
             $tanggal_lahir,
             $alamat,
@@ -83,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="utf-8">
     <title>Tambah Siswa</title>
-    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-    <link href="../css/sb-admin-2.css" rel="stylesheet">
+    <link href="../assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="../assets/css/sb-admin-2.min.css" rel="stylesheet">
 </head>
 <body id="page-top">
     <?php include '../templates/header.php'; ?>
@@ -105,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <?php echo htmlspecialchars($error_message); ?>
                             </div>
                         <?php endif; ?>
-                        
                         <form method="POST" action="">
                             <div class="form-group">
                                 <label>NISN</label>
@@ -118,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <input type="text" name="nama_siswa" class="form-control" 
                                        value="<?php echo isset($_POST['nama_siswa']) ? htmlspecialchars($_POST['nama_siswa']) : ''; ?>" 
                                        required>
+                            </div>
+                            <div class="form-group">
+                                <label>UID (Fingerprint)</label>
+                                <input type="text" name="uid" class="form-control" value="<?php echo isset($_POST['uid']) ? htmlspecialchars($_POST['uid']) : ''; ?>" required>
                             </div>
                             <div class="form-group">
                                 <label>NIS</label>

@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Ambil data dari form
         $nama_guru = $_POST['nama_guru'];
         $nip = $_POST['nip'];
+        $uid = $_POST['uid'];
         $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash password
         $jenis_kelamin = $_POST['jenis_kelamin'];
         $tanggal_lahir = $_POST['tanggal_lahir'];
@@ -22,22 +23,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Validasi NIP unik
         $check_nip = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
         $check_nip->execute(array($nip));
-        
         if ($check_nip->rowCount() > 0) {
             throw new Exception("NIP sudah digunakan");
         }
 
-        // Insert ke tabel users terlebih dahulu
+        // Validasi UID unik di users
+        $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $check_uid->execute(array($uid));
+        if ($check_uid->rowCount() > 0) {
+            throw new Exception("UID sudah digunakan user lain");
+        }
+
+        // Insert ke tabel users
         $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
-        $stmt_user->execute(array($nama_guru, $password, $nip));
+        $stmt_user->execute(array($nama_guru, $password, $uid));
         $user_id = $conn->lastInsertId();
 
         // Simpan data ke tabel guru dengan user_id
-        $stmt = $conn->prepare("INSERT INTO guru (nama_guru, nip, password, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array($nama_guru, $nip, $password, $jenis_kelamin, $tanggal_lahir, $alamat, $user_id));
+        $stmt = $conn->prepare("INSERT INTO guru (nip, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute(array($nip, $jenis_kelamin, $tanggal_lahir, $alamat, $user_id));
 
         $conn->commit();
-        // Redirect ke halaman list guru dengan status success
         header("Location: list_guru.php?status=add_success");
         exit();
         
@@ -49,16 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Tambah Guru - Management Salassika</title>
-    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link href="../css/sb-admin-2.css" rel="stylesheet">
+    <link href="../assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="../assets/css/sb-admin-2.min.css" rel="stylesheet">
 </head>
-
 <body id="page-top">
     <?php include '../templates/header.php'; ?>
     <?php include '../templates/sidebar.php'; ?>
@@ -80,12 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <?php echo htmlspecialchars($error_message); ?>
                                     </div>
                                 <?php endif; ?>
-                                
                                 <form method="POST" action="">
                                     <label>Nama Guru:</label>
                                     <input type="text" name="nama_guru" class="form-control" required><br>
                                     <label>NIP:</label>
                                     <input type="text" name="nip" class="form-control" required><br>
+                                    <label>UID (Fingerprint):</label>
+                                    <input type="text" name="uid" class="form-control" required><br>
                                     <label>Password:</label>
                                     <input type="password" name="password" class="form-control" required><br>
                                     <label>Jenis Kelamin:</label>
@@ -108,5 +113,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     <?php include '../templates/footer.php'; ?>
 </body>
-
 </html>
