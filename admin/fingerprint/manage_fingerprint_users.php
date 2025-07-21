@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../../auth/login.php");
+    exit;
+}
 $title = "Kelola Pengguna Fingerprint";
 $active_page = 'manage_fingerprint_users';
 include '../../templates/header.php';

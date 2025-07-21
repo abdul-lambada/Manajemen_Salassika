@@ -84,11 +84,10 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
             $stmt_user->execute([$row['nama guru'], $password, $nip]);
             $user_id = $conn->lastInsertId();
             // Insert ke guru
-            $stmt_guru = $conn->prepare("INSERT INTO guru (nama_guru, nip, password, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt_guru = $conn->prepare("INSERT INTO guru (nama_guru, nip, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt_guru->execute([
                 $row['nama guru'],
                 $nip,
-                $password,
                 isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
                 isset($row['tanggal lahir']) ? $row['tanggal lahir'] : '',
                 isset($row['alamat']) ? $row['alamat'] : '',

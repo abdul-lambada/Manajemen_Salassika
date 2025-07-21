@@ -12,6 +12,19 @@ if (isset($_GET['id'])) {
     $id_jurusan = $_GET['id'];
 
     try {
+        // Cek apakah jurusan masih digunakan oleh kelas
+        $stmt_check = $conn->prepare("SELECT COUNT(*) FROM kelas WHERE id_jurusan = :id_jurusan");
+        $stmt_check->bindParam(':id_jurusan', $id_jurusan);
+        $stmt_check->execute();
+        $kelas_count = $stmt_check->fetchColumn();
+
+        if ($kelas_count > 0) {
+            // Jika masih digunakan, redirect dengan pesan error
+            header("Location: list_jurusan.php?status=error&message=Jurusan tidak bisa dihapus karena masih digunakan oleh $kelas_count kelas.");
+            exit();
+        }
+
+        // Jika tidak digunakan, lanjutkan proses hapus
         $stmt = $conn->prepare("DELETE FROM jurusan WHERE id_jurusan = :id_jurusan");
         $stmt->bindParam(':id_jurusan', $id_jurusan);
         $stmt->execute();

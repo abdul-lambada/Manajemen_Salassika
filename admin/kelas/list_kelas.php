@@ -1,4 +1,9 @@
 <?php
+session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../../auth/login.php");
+    exit;
+}
 $title = "List Kelas";
 $active_page = "list_kelas";
 include '../../templates/header.php';
@@ -40,7 +45,7 @@ switch ($status) {
         $alert_class = 'alert-danger';
         break;
     case 'error':
-        $message = 'Terjadi kesalahan saat memproses data.';
+        $message = isset($_GET['message']) ? $_GET['message'] : 'Terjadi kesalahan saat memproses data.';
         $alert_class = 'alert-danger';
         break;
     default:

@@ -17,7 +17,8 @@ $stmt_kelas = $conn->query("SELECT id_kelas, nama_kelas FROM kelas ORDER BY nama
 $kelas_list = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
 
 // Ambil data dari device fingerprint
-$zk = new ZKLibrary("192.168.1.201", 4370);
+include_once '../../includes/fingerprint_config.php';
+$zk = new ZKLibrary(FINGERPRINT_IP, FINGERPRINT_PORT);
 $fingerprint_users = [];
 if ($zk->connect()) {
     $zk->disableDevice();
@@ -73,11 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Insert ke tabel siswa
         $stmt = $conn->prepare("
             INSERT INTO siswa 
-            (nisn, jenis_kelamin, tanggal_lahir, alamat, id_kelas, nis, user_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (nisn, nama_siswa, jenis_kelamin, tanggal_lahir, alamat, id_kelas, nis, user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute(array(
             $nisn,
+            $nama_siswa,
             $jenis_kelamin,
             $tanggal_lahir,
             $alamat,

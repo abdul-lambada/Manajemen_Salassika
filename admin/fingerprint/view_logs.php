@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../../auth/login.php");
+    exit;
+}
 $title = "View Logs";
 $active_page = 'view_logs';
 include '../../templates/header.php';
@@ -12,7 +16,7 @@ $log_content = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['clear_log'])) {
         $log_file = $_POST['log_file'];
-        $log_path = __DIR__ . '/../logs/' . basename($log_file);
+        $log_path = __DIR__ . '/../../logs/' . basename($log_file);
         if (file_exists($log_path) && file_put_contents($log_path, '') !== false) {
             $message = "Log file berhasil dibersihkan.";
             $alert_class = 'alert-success';
@@ -23,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 // Get log file
-$log_file = isset($_GET['file']) ? $_GET['file'] : 'fingerprint_sync.log';
-$log_path = __DIR__ . '/../logs/' . basename($log_file);
+$log_file = isset($_GET['file']) ? $_GET['file'] : 'cron_sync.log';
+$log_path = __DIR__ . '/../../logs/' . basename($log_file);
 if (file_exists($log_path)) {
     $log_content = file_get_contents($log_path);
     $log_size = filesize($log_path);
@@ -35,7 +39,7 @@ if (file_exists($log_path)) {
     $log_modified = 'N/A';
 }
 // Get available log files
-$log_dir = __DIR__ . '/../logs/';
+$log_dir = __DIR__ . '/../../logs/';
 $log_files = [];
 if (is_dir($log_dir)) {
     $files = scandir($log_dir);

@@ -1,4 +1,9 @@
 <?php
+session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../../auth/login.php");
+    exit;
+}
 $title = "List Pengaduan";
 $active_page = "list_pengaduan"; // Untuk menandai menu aktif di sidebar
 include '../../templates/header.php';
@@ -65,10 +70,7 @@ switch ($status) {
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <!-- Topbar -->
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List Pengaduan</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
 
         <!-- Begin Page Content -->
         <div class="container-fluid">
@@ -152,7 +154,7 @@ switch ($status) {
                                                 </form>
                                                 <a href="detail_pengaduan.php?id=<?php echo $pengaduan['id_pengaduan']; ?>" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>
                                                  <!-- Tombol Cetak PDF -->
-                                                 <a href="cetak_pdf.php?id=<?php echo $pengaduan['id_pengaduan']; ?>" class="btn btn-danger btn-sm" target="_blank">
+                                                 <a href="cetak_laporan_pengaduan.php?id=<?php echo $pengaduan['id_pengaduan']; ?>" class="btn btn-danger btn-sm" target="_blank">
                                                         <i class="fas fa-file-pdf"></i>
                                                     </a>
                                                 <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#hapusModal-<?php echo $pengaduan['id_pengaduan']; ?>"><i class="fas fa-trash"></i></a>

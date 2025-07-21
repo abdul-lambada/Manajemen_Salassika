@@ -1,48 +1,16 @@
 <?php
+session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../../auth/login.php");
+    exit;
+}
 $title = "List Users";
 $active_page = "list_users"; // Untuk menandai menu aktif di sidebar
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 
-// Input IP address and port for ZKTeco device
-$device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : '192.168.1.201';
-$device_port = isset($_POST['device_port']) ? $_POST['device_port'] : 4370;
-
-// Koneksi ke ZKTeco device
-require '../../includes/zklib/zklibrary.php';
-$zk = new ZKLibrary($device_ip, $device_port);
-$zk->connect();
-$zk->disableDevice();
-
-// Ambil data pengguna dari device
-$users = $zk->getUser();
-
 // Koneksi ke database
 include '../../includes/db.php';
-
-try {
-    // Insert data pengguna ke tabel users
-    foreach ($users as $key => $user) {
-        $uid = $key;
-        $id = $user[0];
-        $name = $user[1];
-        $role = $user[2] == 0 ? 'User' : 'Admin'; // Update role handling
-        $password = $user[3];
-
-        // Query untuk memeriksa apakah UID sudah ada di database
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE uid = ?");
-        $stmt->execute([$uid]);
-        $exists = $stmt->fetchColumn();
-
-        if (!$exists) {
-            // Insert data jika UID belum ada
-            $insertStmt = $conn->prepare("INSERT INTO users (uid, name, role, password) VALUES (?, ?, ?, ?)");
-            $insertStmt->execute([$uid, $name, $role, $password]);
-        }
-    }
-} catch (PDOException $e) {
-    echo "Database error: " . $e->getMessage();
-}
 
 // Pagination: retrieve current page and set limit
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -58,16 +26,8 @@ try {
     $total = $conn->query("SELECT FOUND_ROWS()")->fetchColumn();
     $totalPages = ceil($total / $limit);
 } catch (PDOException $e) {
-    echo "Database error: " . $e->getMessage();
+    die("Database error: " . $e->getMessage());
 }
-
-// Aktifkan kembali device dan putuskan koneksi
-$zk->enableDevice();
-$zk->disconnect();
-
-// Alert to display the connected IP address
-$connected_ip_message = "Terhubung ke perangkat dengan IP: $device_ip";
-$connected_ip_alert_class = 'alert-info';
 
 // Cek status dari query string
 $status = isset($_GET['status']) ? $_GET['status'] : '';
@@ -97,33 +57,8 @@ switch ($status) {
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List Users</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <!-- Form to input device IP and port -->
-            <form method="POST" action="" class="py-2">
-                <div class="form-group">
-                    <label for="device_ip">Device IP:</label>
-                    <input type="text" class="form-control" id="device_ip" name="device_ip" value="<?php echo htmlspecialchars($device_ip); ?>">
-                </div>
-                <div class="form-group">
-                    <label for="device_port">Device Port:</label>
-                    <input type="text" class="form-control" id="device_port" name="device_port" value="<?php echo htmlspecialchars($device_port); ?>">
-                </div>
-                <button type="submit" class="btn btn-primary">Connect</button>
-            </form>
-            <!-- End form -->
-
-            <!-- Begin Alert for Connected IP -->
-            <div class="alert <?php echo $connected_ip_alert_class; ?> alert-dismissible fade show" role="alert">
-                <?php echo $connected_ip_message; ?>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <!-- End Alert for Connected IP -->
-
             <!-- Begin Alert SB Admin 2 -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">

@@ -71,7 +71,7 @@ include '../templates/sidebar.php';
         <?php include '../templates/navbar.php'; ?>
         <div class="container-fluid">
             <div class="row justify-content-center">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <div class="card shadow mb-4 mt-4">
                         <div class="card-header py-3">
                             <h1 class="h4 m-0 font-weight-bold text-primary">Profil Saya</h1>

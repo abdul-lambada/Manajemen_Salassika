@@ -14,7 +14,8 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 
 // Ambil data user dari device fingerprint untuk dropdown
 $fingerprint_users = [];
-$device_ip = '192.168.1.100'; // Default IP, bisa diubah sesuai konfigurasi
+include_once '../../includes/fingerprint_config.php';
+$device_ip = FINGERPRINT_IP; // Menggunakan IP dari konfigurasi
 
 try {
     $zk = new ZKLibrary($device_ip, 4370);

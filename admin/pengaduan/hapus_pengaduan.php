@@ -13,6 +13,20 @@ if (isset($_GET['id'])) {
     $id_pengaduan = $_GET['id'];
 
     try {
+        // Ambil nama file pendukung sebelum menghapus data dari database
+        $stmt_get = $conn->prepare("SELECT file_pendukung FROM pengaduan WHERE id_pengaduan = :id_pengaduan");
+        $stmt_get->bindParam(':id_pengaduan', $id_pengaduan);
+        $stmt_get->execute();
+        $pengaduan = $stmt_get->fetch(PDO::FETCH_ASSOC);
+
+        // Hapus file dari folder uploads jika ada
+        if ($pengaduan && !empty($pengaduan['file_pendukung'])) {
+            $file_path = '../../uploads/' . $pengaduan['file_pendukung'];
+            if (file_exists($file_path)) {
+                unlink($file_path);
+            }
+        }
+
         // Query untuk menghapus data pengaduan berdasarkan ID
         $stmt = $conn->prepare("DELETE FROM pengaduan WHERE id_pengaduan = :id_pengaduan");
         $stmt->bindParam(':id_pengaduan', $id_pengaduan);

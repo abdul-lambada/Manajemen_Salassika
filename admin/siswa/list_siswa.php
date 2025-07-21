@@ -90,15 +90,16 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
         $stmt_user->execute([$row['nama siswa'], $password, $nis]);
         $user_id = $conn->lastInsertId();
         // Insert ke siswa
-        $stmt_siswa = $conn->prepare("INSERT INTO siswa (nama_siswa, nis, password, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt_siswa = $conn->prepare("INSERT INTO siswa (nama_siswa, nis, nisn, jenis_kelamin, tanggal_lahir, alamat, user_id, id_kelas) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt_siswa->execute([
             $row['nama siswa'],
             $nis,
-            $password,
+            isset($row['nisn']) ? $row['nisn'] : '',
             isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
-            isset($row['tanggal lahir']) ? $row['tanggal lahir'] : '',
+            isset($row['tanggal lahir']) ? $row['tanggal_lahir'] : '',
             isset($row['alamat']) ? $row['alamat'] : '',
-            $user_id
+            $user_id,
+            isset($row['id_kelas']) ? $row['id_kelas'] : null
         ]);
         $success++;
     }
@@ -132,7 +133,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
                         <a href="tambah_siswa.php" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-circle"></i> Tambah Siswa
                         </a>
-                        <form method="POST" action="import_siswa.php" enctype="multipart/form-data" class="d-inline">
+                        <form method="POST" action="" enctype="multipart/form-data" class="d-inline">
                             <input type="file" name="excel_file" accept=".xlsx, .xls" required>
                             <button type="submit" name="import_excel" class="btn btn-primary btn-sm">
                                 <i class="fas fa-file-import"></i> Import Excel
