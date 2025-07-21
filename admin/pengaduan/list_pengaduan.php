@@ -1,8 +1,8 @@
 <?php
 $title = "List Pengaduan";
 $active_page = "list_pengaduan"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 
 // Pagination: retrieve current page and set limit
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -10,7 +10,7 @@ $limit = 10; // Jumlah data per halaman
 $offset = ($page - 1) * $limit;
 
 // Ambil data Pengaduan dengan pagination
-include '../includes/db.php';
+include '../../includes/db.php';
 
 // Handle update status via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_pengaduan'])) {
@@ -217,5 +217,5 @@ switch ($status) {
             </div>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-<?php include '../templates/footer.php'; ?>

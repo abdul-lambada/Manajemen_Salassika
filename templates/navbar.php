@@ -20,7 +20,7 @@
                     ?>
                 </span>
                 <img class="img-profile rounded-circle"
-                    src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '../' . $_SESSION['user']['avatar'] : '../assets/img/undraw_profile.svg'; ?>"
+                    src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '../' . $_SESSION['user']['avatar'] : '/absensi_sekolah/assets/img/undraw_profile.svg'; ?>"
                     alt="Profil">
             </a>
             <!-- Dropdown - User Information -->

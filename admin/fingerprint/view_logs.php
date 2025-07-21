@@ -1,9 +1,9 @@
 <?php
 session_start();
 $title = "View Logs";
-$active_page = "view_logs";
-include '../templates/header.php';
-include '../templates/sidebar.php';
+$active_page = 'view_logs';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 
 $message = '';
 $alert_class = '';
@@ -13,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['clear_log'])) {
         $log_file = $_POST['log_file'];
         $log_path = __DIR__ . '/../logs/' . basename($log_file);
-        
         if (file_exists($log_path) && file_put_contents($log_path, '') !== false) {
             $message = "Log file berhasil dibersihkan.";
             $alert_class = 'alert-success';
@@ -23,11 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
 // Get log file
 $log_file = isset($_GET['file']) ? $_GET['file'] : 'fingerprint_sync.log';
 $log_path = __DIR__ . '/../logs/' . basename($log_file);
-
 if (file_exists($log_path)) {
     $log_content = file_get_contents($log_path);
     $log_size = filesize($log_path);
@@ -37,7 +34,6 @@ if (file_exists($log_path)) {
     $log_size = 0;
     $log_modified = 'N/A';
 }
-
 // Get available log files
 $log_dir = __DIR__ . '/../logs/';
 $log_files = [];
@@ -50,14 +46,11 @@ if (is_dir($log_dir)) {
     }
 }
 ?>
-
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">View Logs</h1>
-        </nav>
-        
+        <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
+            <h1 class="h3 mb-4 text-gray-800">View Logs</h1>
             <!-- Alert Messages -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
@@ -67,7 +60,6 @@ if (is_dir($log_dir)) {
                     </button>
                 </div>
             <?php endif; ?>
-
             <div class="row">
                 <!-- Log File Selector -->
                 <div class="col-lg-3">
@@ -84,7 +76,6 @@ if (is_dir($log_dir)) {
                                     </a>
                                 <?php endforeach; ?>
                             </div>
-                            
                             <?php if (file_exists($log_path)): ?>
                                 <hr>
                                 <div class="text-muted small">
@@ -92,7 +83,6 @@ if (is_dir($log_dir)) {
                                     <p>Size: <?php echo number_format($log_size); ?> bytes</p>
                                     <p>Modified: <?php echo $log_modified; ?></p>
                                 </div>
-                                
                                 <form method="POST" action="" onsubmit="return confirm('Yakin ingin membersihkan log file ini?');">
                                     <input type="hidden" name="log_file" value="<?php echo htmlspecialchars($log_file); ?>">
                                     <button type="submit" name="clear_log" class="btn btn-warning btn-sm btn-block">
@@ -103,7 +93,6 @@ if (is_dir($log_dir)) {
                         </div>
                     </div>
                 </div>
-
                 <!-- Log Content -->
                 <div class="col-lg-9">
                     <div class="card shadow mb-4">
@@ -135,7 +124,6 @@ if (is_dir($log_dir)) {
                     </div>
                 </div>
             </div>
-
             <!-- Log Statistics -->
             <?php if (file_exists($log_path) && !empty($log_content)): ?>
                 <div class="row">
@@ -151,7 +139,6 @@ if (is_dir($log_dir)) {
                                 $error_lines = 0;
                                 $warning_lines = 0;
                                 $success_lines = 0;
-                                
                                 foreach ($lines as $line) {
                                     if (stripos($line, 'ERROR') !== false) {
                                         $error_lines++;
@@ -162,7 +149,6 @@ if (is_dir($log_dir)) {
                                     }
                                 }
                                 ?>
-                                
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="text-center">
@@ -196,23 +182,20 @@ if (is_dir($log_dir)) {
             <?php endif; ?>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-
 <script>
 function downloadLog() {
     const logFile = '<?php echo htmlspecialchars($log_file); ?>';
     const link = document.createElement('a');
-    link.href = '../logs/' + logFile;
+    link.href = '../../logs/' + logFile;
     link.download = logFile;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
-
 // Auto-refresh every 30 seconds
 setInterval(function() {
     location.reload();
 }, 30000);
-</script>
-
-<?php include '../templates/footer.php'; ?> 
+</script> 

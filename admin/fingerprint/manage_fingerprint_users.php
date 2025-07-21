@@ -1,11 +1,11 @@
 <?php
 session_start();
 $title = "Kelola Pengguna Fingerprint";
-$active_page = "manage_fingerprint_users";
-include '../templates/header.php';
-include '../templates/sidebar.php';
-include '../includes/db.php';
-include '../includes/fingerprint_config.php';
+$active_page = 'manage_fingerprint_users';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
+require '../../includes/zklib/zklibrary.php';
+include '../../includes/db.php';
 
 $message = '';
 $alert_class = '';
@@ -19,20 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user_name = $_POST['user_name'];
                 $user_type = $_POST['user_type'];
                 $device_ip = $_POST['device_ip'];
-                
+                $privilege = ($user_type === 'guru') ? 0 : 2;
                 try {
-                    require '../includes/zklib/zklibrary.php';
                     $zk = new ZKLibrary($device_ip, 4370);
-                    
                     if ($zk->connect()) {
                         $zk->disableDevice();
-                        
-                        // Tambah pengguna ke fingerprint
-                        $result = $zk->setUser($user_id, $user_id, $user_name, '', 0);
-                        
+                        $result = $zk->setUser($user_id, $user_id, $user_name, '', $privilege);
                         $zk->enableDevice();
                         $zk->disconnect();
-                        
                         if ($result) {
                             $message = "Pengguna berhasil ditambahkan ke fingerprint: $user_name";
                             $alert_class = 'alert-success';
@@ -49,24 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $alert_class = 'alert-danger';
                 }
                 break;
-                
             case 'delete_user':
                 $user_id = $_POST['user_id'];
                 $device_ip = $_POST['device_ip'];
-                
                 try {
-                    require '../includes/zklib/zklibrary.php';
                     $zk = new ZKLibrary($device_ip, 4370);
-                    
                     if ($zk->connect()) {
                         $zk->disableDevice();
-                        
-                        // Hapus pengguna dari fingerprint
                         $result = $zk->deleteUser($user_id);
-                        
                         $zk->enableDevice();
                         $zk->disconnect();
-                        
                         if ($result) {
                             $message = "Pengguna berhasil dihapus dari fingerprint";
                             $alert_class = 'alert-success';
@@ -83,58 +69,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $alert_class = 'alert-danger';
                 }
                 break;
-                
             case 'sync_users':
                 $device_ip = $_POST['device_ip'];
-                
                 try {
-                    require '../includes/zklib/zklibrary.php';
                     $zk = new ZKLibrary($device_ip, 4370);
-                    
                     if ($zk->connect()) {
                         $zk->disableDevice();
-                        
-                        // Ambil data pengguna dari fingerprint
                         $fingerprint_users = $zk->getUser();
-                        
                         $zk->enableDevice();
                         $zk->disconnect();
-                        
-                        // Sinkronisasi dengan database
                         $synced_count = 0;
                         foreach ($fingerprint_users as $uid => $user) {
                             $user_id = $user[0];
                             $user_name = $user[1];
                             $privilege = isset($user[2]) ? $user[2] : 0;
-                            // Mapping privilege ke role sistem
                             if ($privilege == 0) {
                                 $role = 'guru';
                             } elseif ($privilege == 2) {
                                 $role = 'siswa';
-                            } elseif ($privilege == 14) {
-                                $role = 'admin';
+                            } elseif ($privilege == 14 || $privilege == 15) {
+                                continue;
                             } else {
                                 $role = 'siswa';
                             }
-                            // Cek apakah sudah ada di database
                             $check_stmt = $conn->prepare("SELECT id FROM users WHERE uid = ?");
                             $check_stmt->execute([$uid]);
                             $user_db = $check_stmt->fetch(PDO::FETCH_ASSOC);
                             if (!$user_db) {
-                                // Insert ke database
                                 $insert_stmt = $conn->prepare("INSERT INTO users (uid, name, role) VALUES (?, ?, ?)");
                                 $insert_stmt->execute([$uid, $user_name, $role]);
                                 $user_id_db = $conn->lastInsertId();
+                                $synced_count++;
                             } else {
                                 $user_id_db = $user_db['id'];
                             }
-                            // Otomatis mapping ke siswa/guru jika UID fingerprint cocok dengan NIS (siswa) atau NIP (guru)
                             if ($role === 'siswa') {
                                 $siswa_stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
                                 $siswa_stmt->execute([$uid]);
                                 $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
                                 if ($siswa) {
-                                    // Update mapping user_id jika belum sesuai
                                     $update_stmt = $conn->prepare("UPDATE siswa SET user_id = ? WHERE id_siswa = ? AND (user_id IS NULL OR user_id != ?)");
                                     $update_stmt->execute([$user_id_db, $siswa['id_siswa'], $user_id_db]);
                                 }
@@ -143,14 +116,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $guru_stmt->execute([$uid]);
                                 $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
                                 if ($guru) {
-                                    // Update mapping user_id jika belum sesuai
                                     $update_stmt = $conn->prepare("UPDATE guru SET user_id = ? WHERE id_guru = ? AND (user_id IS NULL OR user_id != ?)");
                                     $update_stmt->execute([$user_id_db, $guru['id_guru'], $user_id_db]);
                                 }
                             }
-                            // Jika tidak bisa dimapping, bisa tambahkan notifikasi/log jika perlu
                         }
-                        
                         $message = "Sinkronisasi selesai. $synced_count pengguna baru ditambahkan.";
                         $alert_class = 'alert-success';
                     } else {
@@ -165,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
 // Handle map/unmap POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'map_guru' && !empty($_POST['id_guru']) && !empty($_POST['uid'])) {
@@ -192,19 +161,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update->execute([$_POST['id_siswa']]);
     }
 }
-
 // Ambil data pengguna dari database
 $stmt = $conn->query("SELECT * FROM users ORDER BY name");
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 // Ambil data siswa dan guru untuk dropdown
 $stmt_siswa = $conn->query("SELECT s.id_siswa, s.nama_siswa, s.nis, s.nisn, u.uid FROM siswa s LEFT JOIN users u ON s.user_id = u.id WHERE s.user_id IS NOT NULL ORDER BY s.nama_siswa");
 $siswa_list = $stmt_siswa->fetchAll(PDO::FETCH_ASSOC);
-
 $stmt_guru = $conn->query("SELECT g.id_guru, g.nama_guru, g.nip, u.uid FROM guru g LEFT JOIN users u ON g.user_id = u.id WHERE g.user_id IS NOT NULL ORDER BY g.nama_guru");
 $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
-
-// Ambil UID fingerprint yang belum termapping ke guru/siswa
 $uid_used = [];
 foreach ($siswa_list as $s) { if ($s['uid']) $uid_used[] = $s['uid']; }
 foreach ($guru_list as $g) { if ($g['uid']) $uid_used[] = $g['uid']; }
@@ -213,15 +177,11 @@ $all_uid_stmt = $conn->query("SELECT uid FROM users ORDER BY uid");
 $all_uid = $all_uid_stmt->fetchAll(PDO::FETCH_COLUMN);
 $uid_available = array_diff($all_uid, $uid_used);
 ?>
-
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">Kelola Pengguna Fingerprint</h1>
-        </nav>
-        
+        <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <!-- Alert Messages -->
+            <h1 class="h3 mb-4 text-gray-800">Kelola Pengguna Fingerprint</h1>
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -230,7 +190,6 @@ $uid_available = array_diff($all_uid, $uid_used);
                     </button>
                 </div>
             <?php endif; ?>
-
             <div class="row">
                 <!-- Form Tambah Pengguna -->
                 <div class="col-lg-6">
@@ -241,13 +200,10 @@ $uid_available = array_diff($all_uid, $uid_used);
                         <div class="card-body">
                             <form method="POST" action="">
                                 <input type="hidden" name="action" value="add_user">
-                                
                                 <div class="form-group">
                                     <label for="device_ip">IP Address Perangkat:</label>
-                                    <input type="text" class="form-control" id="device_ip" name="device_ip" 
-                                           value="<?php echo FINGERPRINT_IP; ?>" required>
+                                    <input type="text" class="form-control" id="device_ip" name="device_ip" value="<?php echo FINGERPRINT_IP; ?>" required>
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="user_type">Tipe Pengguna:</label>
                                     <select class="form-control" id="user_type" name="user_type" required>
@@ -256,44 +212,35 @@ $uid_available = array_diff($all_uid, $uid_used);
                                         <option value="guru">Guru</option>
                                     </select>
                                 </div>
-                                
                                 <div class="form-group" id="siswa_select" style="display: none;">
                                     <label for="siswa_id">Pilih Siswa:</label>
                                     <select class="form-control" id="siswa_id" name="siswa_id">
                                         <option value="">Pilih Siswa</option>
                                         <?php foreach ($siswa_list as $siswa): ?>
-                                            <option value="<?php echo $siswa['id_siswa']; ?>" 
-                                                    data-uid="<?php echo $siswa['uid']; ?>" 
-                                                    data-nama="<?php echo $siswa['nama_siswa']; ?>">
+                                            <option value="<?php echo $siswa['id_siswa']; ?>" data-uid="<?php echo $siswa['uid']; ?>" data-nama="<?php echo $siswa['nama_siswa']; ?>">
                                                 <?php echo $siswa['nama_siswa']; ?> (NIS: <?php echo $siswa['nis']; ?>)
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                
                                 <div class="form-group" id="guru_select" style="display: none;">
                                     <label for="guru_id">Pilih Guru:</label>
                                     <select class="form-control" id="guru_id" name="guru_id">
                                         <option value="">Pilih Guru</option>
                                         <?php foreach ($guru_list as $guru): ?>
-                                            <option value="<?php echo $guru['id_guru']; ?>" 
-                                                    data-uid="<?php echo $guru['uid']; ?>"
-                                                    data-nama="<?php echo $guru['nama_guru']; ?>">
+                                            <option value="<?php echo $guru['id_guru']; ?>" data-uid="<?php echo $guru['uid']; ?>" data-nama="<?php echo $guru['nama_guru']; ?>">
                                                 <?php echo $guru['nama_guru']; ?> (NIP: <?php echo $guru['nip']; ?>)
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                
                                 <input type="hidden" id="user_id" name="user_id">
                                 <input type="hidden" id="user_name" name="user_name">
-                                
                                 <button type="submit" class="btn btn-primary">Tambah Pengguna</button>
                             </form>
                         </div>
                     </div>
                 </div>
-
                 <!-- Sinkronisasi Pengguna -->
                 <div class="col-lg-6">
                     <div class="card shadow mb-4">
@@ -303,20 +250,16 @@ $uid_available = array_diff($all_uid, $uid_used);
                         <div class="card-body">
                             <form method="POST" action="">
                                 <input type="hidden" name="action" value="sync_users">
-                                
                                 <div class="form-group">
                                     <label for="sync_device_ip">IP Address Perangkat:</label>
-                                    <input type="text" class="form-control" id="sync_device_ip" name="device_ip" 
-                                           value="<?php echo FINGERPRINT_IP; ?>" required>
+                                    <input type="text" class="form-control" id="sync_device_ip" name="device_ip" value="<?php echo FINGERPRINT_IP; ?>" required>
                                 </div>
-                                
                                 <button type="submit" class="btn btn-success">Sinkronisasi Pengguna</button>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
-
             <!-- Tabel Pengguna -->
             <div class="row">
                 <div class="col-lg-12">
@@ -416,14 +359,13 @@ $uid_available = array_diff($all_uid, $uid_used);
             </div>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-
 <script>
 document.getElementById('user_type').addEventListener('change', function() {
     const userType = this.value;
     const siswaSelect = document.getElementById('siswa_select');
     const guruSelect = document.getElementById('guru_select');
-    
     if (userType === 'siswa') {
         siswaSelect.style.display = 'block';
         guruSelect.style.display = 'none';
@@ -435,7 +377,6 @@ document.getElementById('user_type').addEventListener('change', function() {
         guruSelect.style.display = 'none';
     }
 });
-
 document.getElementById('siswa_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {
@@ -445,7 +386,6 @@ document.getElementById('siswa_id').addEventListener('change', function() {
         document.getElementById('user_name').value = nama;
     }
 });
-
 document.getElementById('guru_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {
@@ -456,5 +396,3 @@ document.getElementById('guru_id').addEventListener('change', function() {
     }
 });
 </script>
-
-<?php include '../templates/footer.php'; ?> 

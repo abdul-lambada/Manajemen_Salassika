@@ -1,27 +1,22 @@
 <?php
 $title = "List Jurusan";
 $active_page = "list_jurusan"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
-
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 // Pagination: retrieve current page and set limit
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
-
 // Ambil data Jurusan dengan pagination
-include '../includes/db.php';
+include '../../includes/db.php';
 $stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM jurusan LIMIT $limit OFFSET $offset");
 $jurusan_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 // Get total number of rows and compute total pages
 $total = $conn->query("SELECT FOUND_ROWS()")->fetchColumn();
 $totalPages = ceil($total / $limit);
-
 // Cek status dari query string
 $status = isset($_GET['status']) ? $_GET['status'] : '';
 $message = '';
-
 switch ($status) {
     case 'add_success':
         $message = 'Data jurusan berhasil ditambahkan.';
@@ -47,10 +42,9 @@ switch ($status) {
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List Jurusan</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
+            <h1 class="h3 mb-4 text-gray-800">List Jurusan</h1>
             <!-- Begin Alert SB Admin 2 -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
@@ -86,7 +80,28 @@ switch ($status) {
                                             <td><?php echo htmlspecialchars($jurusan['nama_jurusan']); ?></td>
                                             <td>
                                                 <a href="edit_jurusan.php?id=<?php echo $jurusan['id_jurusan']; ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"> Edit</i></a>
-                                                <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-trash"> Hapus</i></a>
+                                                <!-- Tombol hapus dengan modal per baris -->
+                                                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#hapusModal<?php echo $jurusan['id_jurusan']; ?>">
+                                                    <i class="fas fa-trash"> Hapus</i>
+                                                </button>
+                                                <!-- Modal Konfirmasi Hapus -->
+                                                <div class="modal fade" id="hapusModal<?php echo $jurusan['id_jurusan']; ?>" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel<?php echo $jurusan['id_jurusan']; ?>" aria-hidden="true">
+                                                  <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                      <div class="modal-header">
+                                                        <h5 class="modal-title" id="hapusModalLabel<?php echo $jurusan['id_jurusan']; ?>">Hapus Data</h5>
+                                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                                          <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                      </div>
+                                                      <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
+                                                      <div class="modal-footer">
+                                                        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                                                        <a class="btn btn-primary" href="hapus_jurusan.php?id=<?php echo $jurusan['id_jurusan']; ?>">Hapus</a>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -126,24 +141,5 @@ switch ($status) {
             </div>
         </div>
     </div>
-</div>
-
-<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Hapus Data</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <a class="btn btn-primary" href="hapus_jurusan.php?id=<?php echo $jurusan['id_jurusan']; ?>">Hapus</a>
-            </div>
-        </div>
-    </div>
-</div>
-<?php include '../templates/footer.php'; ?>
+    <?php include '../../templates/footer.php'; ?>
+    <!-- Hapus modal global dan script JS hapus -->

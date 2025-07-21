@@ -4,8 +4,8 @@ ob_start();
 
 $title = "Log Kehadiran";
 $active_page = "attendance_records"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 
 // Pagination: retrieve current page and set limit
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -44,7 +44,7 @@ if ($status == 'delete_success') {
 }
 
 // Ambil data log kehadiran dari database
-include '../includes/db.php';
+include '../../includes/db.php';
 
 // Query untuk mengambil data log kehadiran dengan informasi mapping
 $stmt = $conn->query("
@@ -75,7 +75,7 @@ $totalPages = ceil($total / $limit);
 
 // Ambil data dari mesin fingerprint jika IP address tersedia
 if (!empty($ip_address)) {
-    require '../includes/zklib/zklibrary.php';
+    require '../../includes/zklib/zklibrary.php';
 
     try {
         // Inisialisasi koneksi ke mesin X100-C
@@ -335,8 +335,8 @@ if (!empty($ip_address)) {
             </div>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-<?php include '../templates/footer.php'; ?>
 
 <?php
 // Kirim output buffered ke browser

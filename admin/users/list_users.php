@@ -1,15 +1,15 @@
 <?php
 $title = "List Users";
 $active_page = "list_users"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 
 // Input IP address and port for ZKTeco device
 $device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : '192.168.1.201';
 $device_port = isset($_POST['device_port']) ? $_POST['device_port'] : 4370;
 
 // Koneksi ke ZKTeco device
-require '../includes/zklib/zklibrary.php';
+require '../../includes/zklib/zklibrary.php';
 $zk = new ZKLibrary($device_ip, $device_port);
 $zk->connect();
 $zk->disableDevice();
@@ -18,7 +18,7 @@ $zk->disableDevice();
 $users = $zk->getUser();
 
 // Koneksi ke database
-include '../includes/db.php';
+include '../../includes/db.php';
 
 try {
     // Insert data pengguna ke tabel users
@@ -253,6 +253,7 @@ switch ($status) {
             </div>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
 
 <script>
@@ -264,5 +265,3 @@ switch ($status) {
         modal.find('.delete-user-btn').attr('href', 'hapus_user.php?id=' + userId);
     });
 </script>
-
-<?php include '../templates/footer.php'; ?>

@@ -68,13 +68,14 @@ try {
             g.nip,
             g.jenis_kelamin,
             u.id as user_id,
+            u.uid as fingerprint_uid,
             kh.timestamp AS waktu_fingerprint,
             kh.verification_mode AS mode_verifikasi,
             kh.status AS status_fingerprint,
             ag.status_kehadiran AS status_manual,
             ag.catatan AS catatan_manual
         FROM Guru g
-        LEFT JOIN users u ON g.nip = u.uid
+        LEFT JOIN users u ON g.user_id = u.id
         LEFT JOIN tbl_kehadiran kh ON u.id = kh.user_id AND DATE(kh.timestamp) = CURDATE()
         LEFT JOIN absensi_guru ag ON g.id_guru = ag.id_guru AND ag.tanggal = CURDATE()
         ORDER BY g.nama_guru
@@ -121,7 +122,7 @@ try {
             kh.status AS status_verifikasi
         FROM absensi_guru ag
         JOIN Guru g ON ag.id_guru = g.id_guru
-        LEFT JOIN users u ON g.nip = u.uid
+        LEFT JOIN users u ON g.user_id = u.id
         LEFT JOIN tbl_kehadiran kh ON u.id = kh.user_id AND DATE(kh.timestamp) = ag.tanggal
         ORDER BY ag.tanggal DESC, g.nama_guru
         LIMIT :limit OFFSET :offset
@@ -167,13 +168,12 @@ try {
 </head>
 
 <body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
+    <?php include __DIR__ . '/../templates/header.php'; ?>
+    <?php include __DIR__ . '/../templates/sidebar.php'; ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h3 mb-0 text-gray-800">Absensi Guru</h1>
-            </nav>
+            
+            <?php include __DIR__ . '/../templates/navbar.php'; ?>
             <div class="container-fluid">
                 <!-- Tampilkan pesan sukses jika ada -->
                 <?php if (!empty($message)): ?>
@@ -425,8 +425,8 @@ try {
                 </div>
             </div>
         </div>
+        <?php include __DIR__ . '/../templates/footer.php'; ?>
     </div>
-    <?php include '../templates/footer.php'; ?>
 </body>
 
 </html>

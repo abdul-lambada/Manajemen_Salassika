@@ -81,7 +81,6 @@ try {
     ");
     $stmt_missing->execute();
     $missing_students = $stmt_missing->fetchAll(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
     $error_message = "Error: " . $e->getMessage();
 }
@@ -105,34 +104,56 @@ try {
             border-radius: 3px;
             font-size: 0.7em;
         }
-        .status-success { background-color: #d4edda; color: #155724; }
-        .status-warning { background-color: #fff3cd; color: #856404; }
-        .status-danger { background-color: #f8d7da; color: #721c24; }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
         .real-time-indicator {
             animation: pulse 2s infinite;
         }
+
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 
 <body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
+    <?php include __DIR__ . '/../templates/header.php'; ?>
+    <?php include __DIR__ . '/../templates/sidebar.php'; ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+            
+            <?php include __DIR__ . '/../templates/navbar.php'; ?>
+            <div class="container-fluid">
                 <h1 class="h3 mb-0 text-gray-800">Monitor Fingerprint</h1>
-                <div class="ml-auto">
+                <div class="ml-auto py-2">
                     <span class="real-time-indicator">
                         <i class="fas fa-circle text-success"></i> Real-time
                     </span>
                 </div>
-            </nav>
-            <div class="container-fluid">
                 <!-- Statistik Fingerprint -->
                 <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -320,8 +341,8 @@ try {
                 </div>
             </div>
         </div>
+        <?php include __DIR__ . '/../templates/footer.php'; ?>
     </div>
-    <?php include '../templates/footer.php'; ?>
 
     <script>
         // Grafik absensi per jam
@@ -330,7 +351,7 @@ try {
             type: 'bar',
             data: {
                 labels: [
-                    <?php 
+                    <?php
                     $labels = [];
                     $data = [];
                     for ($i = 0; $i < 24; $i++) {
@@ -371,4 +392,4 @@ try {
     </script>
 </body>
 
-</html> 
+</html>

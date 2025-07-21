@@ -201,13 +201,12 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
 </head>
 
 <body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
+    <?php include __DIR__ . '/../templates/header.php'; ?>
+    <?php include __DIR__ . '/../templates/sidebar.php'; ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h3 mb-0 text-gray-800">Laporan Absensi Guru</h1>
-            </nav>
+            <?php include __DIR__ . '/../templates/navbar.php'; ?>
+            
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-lg-12">
@@ -276,8 +275,8 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
                 </div>
             </div>
         </div>
+        <?php include __DIR__ . '/../templates/footer.php'; ?>
     </div>
-    <?php include '../templates/footer.php'; ?>
 </body>
 
 </html>

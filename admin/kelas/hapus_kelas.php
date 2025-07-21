@@ -1,9 +1,9 @@
 <?php
 session_start();
-include '../includes/db.php';
+include '../../includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+    header("Location: ../../auth/login.php");
     exit;
 }
 
@@ -12,7 +12,7 @@ if (isset($_GET['id'])) {
     $id_kelas = $_GET['id'];
 
     try {
-        $stmt = $conn->prepare("DELETE FROM Kelas WHERE id_kelas = :id_kelas");
+        $stmt = $conn->prepare("DELETE FROM kelas WHERE id_kelas = :id_kelas");
         $stmt->bindParam(':id_kelas', $id_kelas);
         $stmt->execute();
 

@@ -2,9 +2,9 @@
 session_start();
 $title = "Absensi Real-time";
 $active_page = "realtime_attendance";
-include '../templates/header.php';
-include '../templates/sidebar.php';
-include '../includes/db.php';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
+include '../../includes/db.php';
 
 // Ambil data absensi hari ini
 $today = date('Y-m-d');
@@ -316,4 +316,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../templates/footer.php'; ?> 
+<?php include '../../templates/footer.php'; ?> 

@@ -19,6 +19,41 @@ if (!in_array($role, ['admin', 'guru'])) {
 
 include __DIR__ . '/../templates/header.php';
 include __DIR__ . '/../templates/sidebar.php';
+
+// Ambil data statistik sesuai role
+if ($role === 'admin') {
+    // Statistik untuk admin
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM guru");
+    $guru_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM siswa");
+    $siswa_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $today = date('Y-m-d');
+    $stmt_guru = $conn->prepare("SELECT COUNT(*) as total FROM absensi_guru WHERE DATE(tanggal) = :today");
+    $stmt_guru->bindParam(':today', $today);
+    $stmt_guru->execute();
+    $absensi_guru_today = $stmt_guru->fetch(PDO::FETCH_ASSOC)['total'];
+    $stmt_siswa = $conn->prepare("SELECT COUNT(*) as total FROM absensi_siswa WHERE DATE(tanggal) = :today");
+    $stmt_siswa->bindParam(':today', $today);
+    $stmt_siswa->execute();
+    $absensi_siswa_today = $stmt_siswa->fetch(PDO::FETCH_ASSOC)['total'];
+    $absensi_today = $absensi_guru_today + $absensi_siswa_today;
+    $device_status = 'Online'; // Placeholder, bisa dibuat dinamis jika ada pengecekan device
+} elseif ($role === 'guru') {
+    $today = date('Y-m-d');
+    $id_guru = isset($_SESSION['user']['id_guru']) ? $_SESSION['user']['id_guru'] : null;
+    // Absensi hari ini untuk guru yang login
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM absensi_guru WHERE DATE(tanggal) = :today AND id_guru = :id_guru");
+    $stmt->bindParam(':today', $today);
+    $stmt->bindParam(':id_guru', $id_guru);
+    $stmt->execute();
+    $absensi_today = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    // Tidak ada relasi wali kelas, tampilkan total siswa seluruhnya
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM siswa");
+    $siswa_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $nama_kelas = null;
+    $status_kehadiran = $absensi_today > 0 ? 'Hadir' : 'Belum Absen';
+    $menu_tersedia = 4; // Bisa dibuat dinamis jika menu bertambah
+}
 ?>
 
 <div id="content-wrapper" class="d-flex flex-column">
@@ -51,10 +86,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Total Guru</div>
-                                        <?php
-                                        $stmt = $conn->query("SELECT COUNT(*) as total FROM guru");
-                                        $guru_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                                        ?>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $guru_count ?></div>
                                     </div>
                                     <div class="col-auto">
@@ -64,7 +95,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
@@ -72,10 +102,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                             Total Siswa</div>
-                                        <?php
-                                        $stmt = $conn->query("SELECT COUNT(*) as total FROM siswa");
-                                        $siswa_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                                        ?>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $siswa_count ?></div>
                                     </div>
                                     <div class="col-auto">
@@ -85,7 +111,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-info shadow h-100 py-2">
                             <div class="card-body">
@@ -93,20 +118,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                             Absensi Hari Ini</div>
-                                        <?php
-                                        $today = date('Y-m-d');
-                                        // Hitung absensi guru hari ini
-                                        $stmt_guru = $conn->prepare("SELECT COUNT(*) as total FROM absensi_guru WHERE DATE(tanggal) = :today");
-                                        $stmt_guru->bindParam(':today', $today);
-                                        $stmt_guru->execute();
-                                        $absensi_guru_today = $stmt_guru->fetch(PDO::FETCH_ASSOC)['total'];
-                                        // Hitung absensi siswa hari ini
-                                        $stmt_siswa = $conn->prepare("SELECT COUNT(*) as total FROM absensi_siswa WHERE DATE(tanggal) = :today");
-                                        $stmt_siswa->bindParam(':today', $today);
-                                        $stmt_siswa->execute();
-                                        $absensi_siswa_today = $stmt_siswa->fetch(PDO::FETCH_ASSOC)['total'];
-                                        $absensi_today = $absensi_guru_today + $absensi_siswa_today;
-                                        ?>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $absensi_today ?></div>
                                     </div>
                                     <div class="col-auto">
@@ -116,7 +127,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
@@ -124,7 +134,7 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Device Fingerprint</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">Online</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $device_status ?></div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-fingerprint fa-2x text-gray-300"></i>
@@ -133,7 +143,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                 <?php elseif ($role === 'guru'): ?>
                     <!-- Guru Dashboard Content -->
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -143,15 +152,6 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                             Absensi Hari Ini</div>
-                                        <?php
-                                        $today = date('Y-m-d');
-                                        $user_id = $_SESSION['user']['id'];
-                                        $stmt = $conn->prepare("SELECT COUNT(*) as total FROM absensi_guru WHERE DATE(tanggal) = :today AND user_id = :user_id");
-                                        $stmt->bindParam(':today', $today);
-                                        $stmt->bindParam(':user_id', $user_id);
-                                        $stmt->execute();
-                                        $absensi_today = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                                        ?>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $absensi_today ?></div>
                                     </div>
                                     <div class="col-auto">
@@ -161,18 +161,13 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                            Total Siswa</div>
-                                        <?php
-                                        $stmt = $conn->query("SELECT COUNT(*) as total FROM siswa");
-                                        $siswa_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                                        ?>
+                                            Total Siswa<?= $nama_kelas ? ' ('.$nama_kelas.')' : '' ?></div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $siswa_count ?></div>
                                     </div>
                                     <div class="col-auto">
@@ -182,7 +177,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-info shadow h-100 py-2">
                             <div class="card-body">
@@ -191,7 +185,7 @@ include __DIR__ . '/../templates/sidebar.php';
                                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                             Status Kehadiran</div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                            <?= $absensi_today > 0 ? 'Hadir' : 'Belum Absen' ?>
+                                            <?= $status_kehadiran ?>
                                         </div>
                                     </div>
                                     <div class="col-auto">
@@ -201,7 +195,6 @@ include __DIR__ . '/../templates/sidebar.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
@@ -209,7 +202,7 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Menu Tersedia</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">4 Menu</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $menu_tersedia ?> Menu</div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-bars fa-2x text-gray-300"></i>

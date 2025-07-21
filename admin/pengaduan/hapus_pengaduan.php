@@ -1,10 +1,10 @@
 <?php
 session_start();
-include '../includes/db.php';
+include '../../includes/db.php';
 
 // Pastikan hanya admin yang dapat mengakses halaman ini
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+    header("Location: ../../auth/login.php");
     exit;
 }
 

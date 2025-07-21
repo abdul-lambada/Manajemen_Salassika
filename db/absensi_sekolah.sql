@@ -47,7 +47,7 @@ CREATE TABLE `absensi_siswa` (
   `id_absensi_siswa` int(11) NOT NULL,
   `id_siswa` int(11) NOT NULL,
   `tanggal` date NOT NULL,
-  `status_kehadiran` enum('Hadir','Telat','Sakit','Ijin','Tidak Hadir') NOT NULL,
+  `status_kehadiran` enum('Hadir','Telat','Sakit','Izin','Tidak Hadir') NOT NULL,
   `jam_masuk` time DEFAULT NULL,
   `jam_keluar` time DEFAULT NULL,
   `catatan` text,
@@ -67,14 +67,16 @@ CREATE TABLE `guru` (
   `jenis_kelamin` enum('Laki-laki','Perempuan') NOT NULL,
   `tanggal_lahir` date DEFAULT NULL,
   `alamat` text NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `role` enum('admin','guru') DEFAULT 'guru',
   `user_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data untuk tabel `guru`
 --
+
+INSERT INTO `guru` (`id_guru`, `nama_guru`, `nip`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `user_id`) VALUES
+(1, 'Guru Matematika', '198501012010012001', 'Laki-laki', '1985-01-01', 'Jl. Pendidikan No. 123, Jakarta', 2),
+(2, 'Guru Bahasa Indonesia', '198602022010012002', 'Perempuan', '1986-02-02', 'Jl. Guru No. 456, Jakarta', 3);
 
 
 -- --------------------------------------------------------
@@ -216,16 +218,18 @@ CREATE TABLE `users` (
   `avatar` VARCHAR(255) NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('admin','guru','siswa') NOT NULL,
-  `uid` varchar(50) NOT NULL UNIQUE,
+  `uid` varchar(50) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uid` (`uid`),
-  KEY `role` (`role`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data untuk tabel `users`
 --
+INSERT INTO `users` (`id`, `name`, `avatar`, `password`, `role`, `uid`, `created_at`) VALUES
+(1, 'admin', NULL, '$2y$10$x7xWgiXMLwF/Rq4oH6Lpz.Jt1jzM5a.q8jUamJ.K4qbyXkgtdoELi', 'admin', '12345678', '2025-03-05 09:07:00'),
+(2, 'Guru Matematika', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'guru', '87654321', '2025-03-05 10:00:00'),
+(3, 'Guru Bahasa Indonesia', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'guru', '11223344', '2025-03-05 10:00:00'); 
 
 
 -- --------------------------------------------------------
@@ -320,8 +324,8 @@ ALTER TABLE `tbl_kehadiran`
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uid` (`uid`);
+  ADD UNIQUE KEY `uid` (`uid`),
+  ADD KEY `role` (`role`);
 
 --
 -- Indexes for table `fingerprint_logs`

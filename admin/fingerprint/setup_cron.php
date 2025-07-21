@@ -1,10 +1,10 @@
 <?php
 session_start();
 $title = "Setup Cron Job";
-$active_page = "setup_cron";
-include '../templates/header.php';
-include '../templates/sidebar.php';
-include '../includes/fingerprint_config.php';
+$active_page = 'setup_cron';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
+include '../../includes/fingerprint_config.php';
 
 $message = '';
 $alert_class = '';
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['setup_cron'])) {
         $cron_interval = $_POST['cron_interval'];
         $php_path = $_POST['php_path'];
-        $script_path = realpath(__DIR__ . '/../admin/auto_sync_fingerprint.php');
+        $script_path = realpath(__DIR__ . '/../../admin/realtime/auto_sync_fingerprint.php');
         
         // Generate cron command
         switch ($cron_interval) {
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cron_command = "$cron_expression $php_path $script_path";
         
         // Create cron job file
-        $cron_file = __DIR__ . '/../logs/fingerprint_cron.txt';
+        $cron_file = __DIR__ . '/../../logs/fingerprint_cron.txt';
         $cron_content = "# Fingerprint Auto Sync Cron Job\n";
         $cron_content .= "# Generated on: " . date('Y-m-d H:i:s') . "\n";
         $cron_content .= "# Interval: $cron_interval\n";
@@ -74,11 +74,14 @@ if (function_exists('exec')) {
 
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">Setup Cron Job</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
         
         <div class="container-fluid">
+            <!-- Page Heading -->
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Setup Cron Job</h1>
+            </div>
+
             <!-- Alert Messages -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
@@ -170,7 +173,7 @@ if (function_exists('exec')) {
                         </div>
                         <div class="card-body">
                             <?php
-                            $cron_file = __DIR__ . '/../logs/fingerprint_cron.txt';
+                            $cron_file = __DIR__ . '/../../logs/fingerprint_cron.txt';
                             if (file_exists($cron_file)) {
                                 $cron_content = file_get_contents($cron_file);
                                 echo '<pre class="bg-light p-3">' . htmlspecialchars($cron_content) . '</pre>';
@@ -204,8 +207,8 @@ if (function_exists('exec')) {
                                 <div class="col-md-6">
                                     <h6>Path Info:</h6>
                                     <ul>
-                                        <li>Script Path: <?php echo realpath(__DIR__ . '/../admin/auto_sync_fingerprint.php'); ?></li>
-                                        <li>Log Path: <?php echo realpath(__DIR__ . '/../logs/'); ?></li>
+                                        <li>Script Path: <?php echo realpath(__DIR__ . '/../../admin/realtime/auto_sync_fingerprint.php'); ?></li>
+                                        <li>Log Path: <?php echo realpath(__DIR__ . '/../../logs/'); ?></li>
                                         <li>PHP Path: <?php echo $php_path; ?></li>
                                     </ul>
                                 </div>
@@ -216,6 +219,15 @@ if (function_exists('exec')) {
             </div>
         </div>
     </div>
+    
+    <?php include '../../templates/footer.php'; ?>
 </div>
 
-<?php include '../templates/footer.php'; ?> 
+<!-- JS SB Admin -->
+<script src="../../assets/vendor/jquery/jquery.min.js"></script>
+<script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../../assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+<script src="../../assets/js/sb-admin-2.min.js"></script>
+
+</body>
+</html> 

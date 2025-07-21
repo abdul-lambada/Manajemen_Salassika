@@ -1,9 +1,13 @@
 <?php
 session_start();
-include '../includes/db.php';
+$title = "Edit Guru";
+$active_page = "edit_guru";
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
+include '../../includes/db.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+    header("Location: ../../auth/login.php");
     exit;
 }
 
@@ -21,10 +25,11 @@ if (!empty($guru['user_id'])) {
     $user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 }
 
+$message = '';
+$alert_class = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn->beginTransaction();
-        
         // Ambil data dari form
         $nama_guru = $_POST['nama_guru'];
         $nip = $_POST['nip'];
@@ -33,97 +38,94 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $tanggal_lahir = $_POST['tanggal_lahir'];
         $alamat = $_POST['alamat'];
         $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : $user['password'];
-
         // Validasi NIP unik
         $check_nip = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ? AND id_guru != ?");
         $check_nip->execute([$nip, $id_guru]);
         if ($check_nip->rowCount() > 0) {
             throw new Exception("NIP sudah digunakan oleh guru lain");
         }
-
         // Validasi UID unik di users
         $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ? AND id != ?");
         $check_uid->execute([$uid, $user['id']]);
         if ($check_uid->rowCount() > 0) {
             throw new Exception("UID sudah digunakan user lain");
         }
-
         // Update data di tabel guru
         $stmt = $conn->prepare("UPDATE guru SET nip = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id_guru = ?");
         $stmt->execute([$nip, $jenis_kelamin, $tanggal_lahir, $alamat, $id_guru]);
-
         // Update data di tabel users
         $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ? WHERE id = ?");
         $stmt_user->execute([$nama_guru, $password, $uid, $user['id']]);
-
         $conn->commit();
         header("Location: list_guru.php?status=edit_success");
         exit();
-        
     } catch (Exception $e) {
         $conn->rollBack();
-        $error_message = $e->getMessage();
+        $message = $e->getMessage();
+        $alert_class = 'alert-danger';
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Edit Guru - Management Salassika</title>
-    <link href="../assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link href="../assets/css/sb-admin-2.min.css" rel="stylesheet">
-</head>
-<body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
-    <div id="content-wrapper" class="d-flex flex-column">
-        <div id="content">
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h3 mb-0 text-gray-800">Edit Guru</h1>
-            </nav>
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Form Edit Guru</h6>
-                            </div>
-                            <div class="card-body">
-                                <?php if (!empty($error_message)): ?>
-                                    <div class="alert alert-danger">
-                                        <?php echo htmlspecialchars($error_message); ?>
-                                    </div>
-                                <?php endif; ?>
-                                <form method="POST" action="">
+<div id="content-wrapper" class="d-flex flex-column">
+    <div id="content">
+        <?php include '../../templates/navbar.php'; ?>
+        <div class="container-fluid">
+            <h1 class="h3 mb-4 text-gray-800">Edit Guru</h1>
+            <?php if (!empty($message)): ?>
+                <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
+                    <?php echo htmlspecialchars($message); ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Form Edit Guru</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="">
+                                <div class="form-group">
                                     <label>Nama Guru:</label>
-                                    <input type="text" name="nama_guru" class="form-control" value="<?php echo htmlspecialchars($user['name']); ?>" required><br>
+                                    <input type="text" name="nama_guru" class="form-control" value="<?php echo htmlspecialchars($user['name']); ?>" required>
+                                </div>
+                                <div class="form-group">
                                     <label>NIP:</label>
-                                    <input type="text" name="nip" class="form-control" value="<?php echo htmlspecialchars($guru['nip']); ?>" required><br>
+                                    <input type="text" name="nip" class="form-control" value="<?php echo htmlspecialchars($guru['nip']); ?>" required>
+                                </div>
+                                <div class="form-group">
                                     <label>UID (Fingerprint):</label>
-                                    <input type="text" name="uid" class="form-control" value="<?php echo htmlspecialchars($user['uid']); ?>" required><br>
+                                    <input type="text" name="uid" class="form-control" value="<?php echo htmlspecialchars($user['uid']); ?>" required>
+                                </div>
+                                <div class="form-group">
                                     <label>Password (kosongkan jika tidak ingin diubah):</label>
-                                    <input type="password" name="password" class="form-control"><br>
+                                    <input type="password" name="password" class="form-control">
+                                </div>
+                                <div class="form-group">
                                     <label>Jenis Kelamin:</label>
                                     <select name="jenis_kelamin" class="form-control" required>
                                         <option value="Laki-laki" <?php echo ($guru['jenis_kelamin'] == 'Laki-laki') ? 'selected' : ''; ?>>Laki-laki</option>
                                         <option value="Perempuan" <?php echo ($guru['jenis_kelamin'] == 'Perempuan') ? 'selected' : ''; ?>>Perempuan</option>
-                                    </select><br>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label>Tanggal Lahir:</label>
-                                    <input type="date" name="tanggal_lahir" class="form-control" value="<?php echo htmlspecialchars($guru['tanggal_lahir']); ?>" required><br>
+                                    <input type="date" name="tanggal_lahir" class="form-control" value="<?php echo htmlspecialchars($guru['tanggal_lahir']); ?>" required>
+                                </div>
+                                <div class="form-group">
                                     <label>Alamat:</label>
-                                    <textarea name="alamat" class="form-control" required><?php echo htmlspecialchars($guru['alamat']); ?></textarea><br>
-                                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-                                </form>
-                            </div>
+                                    <textarea name="alamat" class="form-control" required><?php echo htmlspecialchars($guru['alamat']); ?></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success">Simpan</button>
+                                <a href="list_guru.php" class="btn btn-secondary">Batal</a>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <?php include '../templates/footer.php'; ?>
-</body>
-</html>
+    <?php include '../../templates/footer.php'; ?>
+</div>

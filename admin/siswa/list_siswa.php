@@ -2,9 +2,10 @@
 use PhpOffice\PhpSpreadsheet\IOFactory;
 $title = "List Siswa";
 $active_page = "list_siswa";
-include '../templates/header.php';
-include '../templates/sidebar.php';
-include '../includes/db.php';
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
+// include '../../templates/navbar.php';
+include '../../includes/db.php';
 
 // Konfigurasi pagination
 $limit = 10;
@@ -68,7 +69,7 @@ switch ($status) {
 
 // Proses import Excel jika ada upload
 if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
-    require_once '../vendor/phpoffice/phpspreadsheet/src/Bootstrap.php';
+    require_once '../../vendor/phpoffice/phpspreadsheet/src/Bootstrap.php';
     $file = $_FILES['excel_file']['tmp_name'];
     $spreadsheet = IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet();
@@ -108,10 +109,13 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
 
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List Siswa</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
+        
         <div class="container-fluid">
+            <!-- Page Heading -->
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">List Siswa</h1>
+            </div>
             <?php if (!empty($message)): ?>
                 <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
                     <?= $message ?>
@@ -134,7 +138,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
                                 <i class="fas fa-file-import"></i> Import Excel
                             </button>
                         </form>
-                        <a href="../assets/format_siswa.xlsx" class="btn btn-info btn-sm" download>
+                        <a href="../../assets/format_data_siswa.xlsx" class="btn btn-info btn-sm" download>
                             <i class="fas fa-download"></i> Unduh Format Excel
                         </a>
                     </div>
@@ -229,6 +233,15 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
             </div>
         </div>
     </div>
+    
+    <?php include '../../templates/footer.php'; ?>
 </div>
 
-<?php include '../templates/footer.php'; ?>
+<!-- JS SB Admin -->
+<script src="../../assets/vendor/jquery/jquery.min.js"></script>
+<script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../../assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+<script src="../../assets/js/sb-admin-2.min.js"></script>
+
+</body>
+</html>

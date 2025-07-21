@@ -4,8 +4,8 @@ ob_start();
 
 $title = "Log Kehadiran";
 $active_page = "log_absensi"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include __DIR__ . '/../templates/header.php';
+include __DIR__ . '/../templates/sidebar.php';
 
 // Pagination: retrieve current page and set limit
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -128,9 +128,7 @@ if (!empty($ip_address)) {
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">Log Kehadiran</h1>
-        </nav>
+        <?php include __DIR__ . '/../templates/navbar.php'; ?>
         <div class="container-fluid">
             <!-- Begin Alert SB Admin 2 -->
             <?php if (!empty($message)): ?>
@@ -260,8 +258,8 @@ if (!empty($ip_address)) {
             </div>
         </div>
     </div>
+    <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
-<?php include '../templates/footer.php'; ?>
 
 <?php
 // Kirim output buffered ke browser

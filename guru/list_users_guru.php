@@ -1,8 +1,8 @@
 <?php
 $title = "List User Fingerprint Guru";
 $active_page = "list_users"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include __DIR__ . '/../templates/header.php';
+include __DIR__ . '/../templates/sidebar.php';
 
 // Input IP address and port for ZKTeco device
 $device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : '192.168.1.201';
@@ -19,15 +19,8 @@ $users = $zk->getUser();
 
 // Koneksi ke database
 include '../includes/db.php';
-// $host = 'localhost';
-// $dbname = 'absensi_sekolah';
-// $username = 'root';
-// $password = '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     // Insert data pengguna ke tabel users
     foreach ($users as $key => $user) {
         $uid = $key;
@@ -37,13 +30,13 @@ try {
         $password = $user[3];
 
         // Query untuk memeriksa apakah UID sudah ada di database
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE uid = :uid");
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE uid = :uid");
         $stmt->execute(['uid' => $uid]);
         $exists = $stmt->fetchColumn();
 
         if (!$exists) {
             // Insert data jika UID belum ada
-            $insertStmt = $pdo->prepare("INSERT INTO users (uid, name, role, password) VALUES (:uid, :name, :role, :password)");
+            $insertStmt = $conn->prepare("INSERT INTO users (uid, name, role, password) VALUES (:uid, :name, :role, :password)");
             $insertStmt->execute([
                 'uid' => $uid,
                 'name' => $name,
@@ -63,11 +56,11 @@ $offset = ($page - 1) * $limit;
 
 // Ambil data dari tabel users untuk ditampilkan
 try {
-    $stmt = $pdo->query("SELECT SQL_CALC_FOUND_ROWS * FROM users LIMIT $limit OFFSET $offset");
+    $stmt = $conn->query("SELECT SQL_CALC_FOUND_ROWS * FROM users LIMIT $limit OFFSET $offset");
     $dbUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get total number of rows and compute total pages
-    $total = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
+    $total = $conn->query("SELECT FOUND_ROWS()")->fetchColumn();
     $totalPages = ceil($total / $limit);
 } catch (PDOException $e) {
     echo "Database error: " . $e->getMessage();
@@ -105,9 +98,7 @@ switch ($status) {
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">List User Fingerprint Guru</h1>
-        </nav>
+        <?php include __DIR__ . '/../templates/navbar.php'; ?>
         <div class="container-fluid">
             <!-- Form to input device IP and port -->
             <form method="POST" action="" class="py-2">
@@ -231,6 +222,7 @@ switch ($status) {
             </div>
         </div>
     </div>
+    <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
 
 <script>
@@ -242,5 +234,3 @@ switch ($status) {
         modal.find('.delete-user-btn').attr('href', 'hapus_user.php?id=' + userId);
     });
 </script>
-
-<?php include '../templates/footer.php'; ?>

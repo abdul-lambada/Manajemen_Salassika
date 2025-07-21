@@ -1,13 +1,13 @@
 <?php
 session_start();
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+    header("Location: ../../auth/login.php");
     exit;
 }
 
 $title = "Detail Pengaduan";
-include '../templates/header.php';
-include '../includes/db.php';
+include '../../templates/header.php';
+include '../../includes/db.php';
 
 // Ambil ID pengaduan dari query string
 $id_pengaduan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -83,10 +83,10 @@ if (!$pengaduan) {
 
                                             if (in_array(strtolower($file_extension), $image_extensions)): ?>
                                                 <!-- Tampilkan gambar jika file adalah gambar -->
-                                                <img src="../uploads/<?php echo htmlspecialchars($pengaduan['file_pendukung']); ?>" alt="File Pendukung" style="max-width: 200px; max-height: 200px;">
+                                                <img src="../../uploads/<?php echo htmlspecialchars($pengaduan['file_pendukung']); ?>" alt="File Pendukung" style="max-width: 200px; max-height: 200px;">
                                             <?php else: ?>
                                                 <!-- Tampilkan link unduh jika file bukan gambar -->
-                                                <a href="../uploads/<?php echo htmlspecialchars($pengaduan['file_pendukung']); ?>" target="_blank">
+                                                <a href="../../uploads/<?php echo htmlspecialchars($pengaduan['file_pendukung']); ?>" target="_blank">
                                                     Unduh File
                                                 </a>
                                             <?php endif; ?>
@@ -144,5 +144,5 @@ if (!$pengaduan) {
             </div>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-<?php include '../templates/footer.php'; ?>

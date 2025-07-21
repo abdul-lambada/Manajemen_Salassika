@@ -1,239 +1,332 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-session_start(); // Mulai session untuk menyimpan status
+session_start();
 
 $title = "Sinkronisasi Fingerprint";
-$active_page = "sync_fingerprint"; // Untuk menandai menu aktif di sidebar
-include '../templates/header.php';
-include '../templates/sidebar.php';
+$active_page = "sync_fingerprint";
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 
-// Load library fingerprint dan database
-require '../includes/zklib/zklibrary.php';
-include '../includes/db.php';
+require '../../includes/zklib/zklibrary.php';
+include '../../includes/db.php';
 
-// Variabel untuk menyimpan pesan status
 $connection_message = '';
 $connection_class = '';
 $synchronized_data = [];
+$user_sync_data = [];
 
-// Cek apakah ada status koneksi yang tersimpan di session
 if (isset($_SESSION['connection_message'])) {
     $connection_message = $_SESSION['connection_message'];
     $connection_class = $_SESSION['connection_class'];
-    unset($_SESSION['connection_message'], $_SESSION['connection_class']); // Clear session
+    unset($_SESSION['connection_message'], $_SESSION['connection_class']);
 }
 
-// Ambil data absensi yang sudah disinkronkan dari session (jika ada)
 if (isset($_SESSION['synchronized_data'])) {
     $synchronized_data = $_SESSION['synchronized_data'];
     unset($_SESSION['synchronized_data']);
 }
 
+// Fungsi mapping hak fingerprint ke role sistem
+function mapFingerprintRoleToSystemRole($fingerprintRole) {
+    // Angka
+    if ($fingerprintRole == 0) return 'guru'; // User
+    if ($fingerprintRole == 14 || $fingerprintRole == 15) return false; // Admin/Superadmin abaikan
+
+    // String (case-insensitive)
+    $role = strtolower($fingerprintRole);
+    if ($role === 'user') return 'guru';
+    if ($role === 'pendaftar') return 'siswa';
+    if ($role === 'admin') return false; // Abaikan admin
+
+    // Default abaikan
+    return false;
+}
+
 // Cek apakah tombol "Sinkronkan" ditekan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
-    $device_ip = $_POST['device_ip']; // Ambil IP dari input form
-    $device_port = 4370; // Port default perangkat fingerprint
+    $device_ip = $_POST['device_ip'];
+    $device_port = 4370;
+    $sync_type = isset($_POST['sync_type']) ? $_POST['sync_type'] : 'attendance'; // 'attendance' atau 'users'
 
     try {
-        // Inisialisasi koneksi ke perangkat (pendekatan sederhana seperti test.php)
         $zk = new ZKLibrary($device_ip, $device_port);
 
-        // Coba terhubung ke perangkat
         if ($zk->connect()) {
             $connection_message = 'Berhasil terhubung ke perangkat fingerprint dengan IP: ' . htmlspecialchars($device_ip, ENT_QUOTES);
             $connection_class = 'alert-success';
 
-            // Nonaktifkan perangkat sementara
             $zk->disableDevice();
 
-            // Ambil data pengguna dan absensi
-            $users = $zk->getUser(); // Data pengguna dari fingerprint
-            $attendance = $zk->getAttendance(); // Data absensi
+            if ($sync_type === 'users') {
+                // Sinkronisasi data user dari device fingerprint
+                $users = $zk->getUser();
+                $processed_users = 0;
+                $updated_users = 0;
 
-            // Debug: cek apakah data absensi kosong
-            if (empty($attendance)) {
-                $connection_message .= ' Tidak ada data absensi yang diambil dari mesin fingerprint.';
-            }
+                foreach ($users as $user) {
+                    $uid = $user[0]; // UID dari device
+                    $name = $user[1]; // Nama dari device
+                    $role = isset($user[2]) ? $user[2] : 'pendaftar'; // Hak/role dari device
+                    $password = isset($user[3]) ? $user[3] : '123456'; // Password dari device (jika ada)
 
-            // Aktifkan kembali perangkat
-            $zk->enableDevice();
-            $zk->disconnect();
+                    // Mapping role
+                    $system_role = mapFingerprintRoleToSystemRole($role);
+                    if ($system_role === false) continue; // Lewati user dengan role admin
 
-            // Proses data absensi dan simpan ke database
-            $processed_count = 0;
-            $error_count = 0;
+                    // Cek apakah UID sudah ada di tabel users
+                    $check_user = $conn->prepare("SELECT id, name, role FROM users WHERE uid = ?");
+                    $check_user->execute([$uid]);
+                    $existing_user = $check_user->fetch(PDO::FETCH_ASSOC);
 
-            foreach ($attendance as $record) {
-                $uid = $record[0]; // ID unik internal mesin
-                $user_id = $record[1]; // ID pengguna
-                $status = $record[2]; // Status kehadiran (0 = Masuk, 1 = Keluar)
-                $timestamp = date('Y-m-d H:i:s', strtotime($record[3])); // Format waktu
-                $verification_mode = isset($record[4]) ? $record[4] : 'Unknown';
+                    if ($existing_user) {
+                        // Update user yang sudah ada
+                        $update_user = $conn->prepare("UPDATE users SET name = ?, role = ? WHERE uid = ?");
+                        $update_user->execute([$name, $system_role, $uid]);
+                        $updated_users++;
+                        $user_sync_data[] = [
+                            'uid' => $uid,
+                            'name' => $name,
+                            'role' => $system_role,
+                            'status' => 'Updated'
+                        ];
+                    } else {
+                        // Insert user baru
+                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                        $insert_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, ?, ?)");
+                        $insert_user->execute([$name, $hashed_password, $system_role, $uid]);
+                        $processed_users++;
+                        $user_sync_data[] = [
+                            'uid' => $uid,
+                            'name' => $name,
+                            'role' => $system_role,
+                            'status' => 'Added'
+                        ];
+                    }
+                }
 
-                // Ambil nama pengguna dari data pengguna
-                $user_name = isset($users[$user_id]) ? $users[$user_id][1] : 'Unknown';
+                $connection_message .= " Berhasil sinkronisasi $processed_users user baru dan update $updated_users user.";
+            } else {
+                // Sinkronisasi absensi (kode yang sudah ada)
+                $users = $zk->getUser();
+                $attendance = $zk->getAttendance();
 
-                // Konversi status ke teks
-                $status_text = $status == 0 ? 'Masuk' : 'Keluar';
+                if (empty($attendance)) {
+                    $connection_message .= ' Tidak ada data absensi yang diambil dari mesin fingerprint.';
+                }
 
-                // Cek apakah data sudah ada di database
-                $check_stmt = $conn->prepare("SELECT COUNT(*) FROM tbl_kehadiran WHERE user_id = ? AND timestamp = ?");
-                $check_stmt->execute([$user_id, $timestamp]);
-                $exists = $check_stmt->fetchColumn();
+                $processed_count = 0;
+                $error_count = 0;
 
-                if (!$exists) {
-                    // Cari user_id yang sesuai di tabel users berdasarkan uid
-                    $user_stmt = $conn->prepare("SELECT id, name FROM users WHERE uid = ?");
-                    $user_stmt->execute([$user_id]);
-                    $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+                foreach ($attendance as $record) {
+                    $uid = $record[0];
+                    $user_id = $record[1];
+                    $status = $record[2];
+                    $timestamp = date('Y-m-d H:i:s', strtotime($record[3]));
+                    $verification_mode = isset($record[4]) ? $record[4] : 'Unknown';
 
-                    if ($user) {
-                        // Insert data baru ke tbl_kehadiran dengan user_id yang benar
-                        $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
-                        $insert_stmt->execute([$user['id'], $user['name'], $timestamp, $verification_mode, $status_text]);
+                    $user_name = isset($users[$user_id]) ? $users[$user_id][1] : 'Unknown';
+                    $status_text = $status == 0 ? 'Masuk' : 'Keluar';
 
-                        // Coba mapping dengan data siswa berdasarkan user_id
-                        $siswa_stmt = $conn->prepare("SELECT id_siswa, nama_siswa FROM siswa WHERE user_id = ?");
-                        $siswa_stmt->execute([$user['id']]);
-                        $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+                    $check_stmt = $conn->prepare("SELECT COUNT(*) FROM tbl_kehadiran WHERE user_id = ? AND timestamp = ?");
+                    $check_stmt->execute([$user_id, $timestamp]);
+                    $exists = $check_stmt->fetchColumn();
 
-                        if ($siswa) {
-                            // Mapping dengan siswa berhasil
-                            $tanggal = date('Y-m-d', strtotime($timestamp));
-                            $jam_masuk = date('H:i:s', strtotime($timestamp));
-                            
-                            // Cek apakah absensi siswa sudah ada untuk hari ini
-                            $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
-                            $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
-                            
-                            if ($check_absensi->fetchColumn() == 0) {
-                                // Insert ke tabel absensi_siswa
-                                $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
-                                $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
-                            }
-                            
-                            $synchronized_data[] = [
-                                'id_siswa' => $siswa['id_siswa'],
-                                'nama' => $siswa['nama_siswa'],
-                                'tanggal' => $tanggal,
-                                'jam_masuk' => $jam_masuk,
-                                'tipe' => 'Siswa'
-                            ];
-                        } else {
-                            // Coba mapping dengan data guru berdasarkan user_id
-                            $guru_stmt = $conn->prepare("SELECT id_guru, nama_guru FROM guru WHERE user_id = ?");
-                            $guru_stmt->execute([$user['id']]);
-                            $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+                    if (!$exists) {
+                        $user_stmt = $conn->prepare("SELECT id, name FROM users WHERE uid = ?");
+                        $user_stmt->execute([$user_id]);
+                        $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
-                            if ($guru) {
-                                // Mapping dengan guru berhasil
+                        if ($user) {
+                            $insert_stmt = $conn->prepare("INSERT INTO tbl_kehadiran (user_id, user_name, timestamp, verification_mode, status) VALUES (?, ?, ?, ?, ?)");
+                            $insert_stmt->execute([$user['id'], $user['name'], $timestamp, $verification_mode, $status_text]);
+
+                            // Mapping dengan siswa
+                            $siswa_stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE user_id = ?");
+                            $siswa_stmt->execute([$user['id']]);
+                            $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+
+                            if ($siswa) {
                                 $tanggal = date('Y-m-d', strtotime($timestamp));
                                 $jam_masuk = date('H:i:s', strtotime($timestamp));
                                 
-                                // Cek apakah absensi guru sudah ada untuk hari ini
-                                $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
-                                $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                                $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
+                                $check_absensi->execute([$siswa['id_siswa'], $tanggal]);
                                 
                                 if ($check_absensi->fetchColumn() == 0) {
-                                    // Insert ke tabel absensi_guru
-                                    $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
-                                    $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
+                                    $insert_absensi = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                                    $insert_absensi->execute([$siswa['id_siswa'], $tanggal, $jam_masuk]);
                                 }
                                 
                                 $synchronized_data[] = [
-                                    'id_guru' => $guru['id_guru'],
-                                    'nama' => $guru['nama_guru'],
+                                    'id_siswa' => $siswa['id_siswa'],
+                                    'nama' => $user['name'],
                                     'tanggal' => $tanggal,
                                     'jam_masuk' => $jam_masuk,
-                                    'tipe' => 'Guru'
+                                    'tipe' => 'Siswa'
                                 ];
                             } else {
-                                // Tidak ada mapping yang ditemukan
-                                $synchronized_data[] = [
-                                    'user_id' => $user['id'],
-                                    'nama' => $user['name'],
-                                    'tanggal' => date('Y-m-d', strtotime($timestamp)),
-                                    'jam_masuk' => date('H:i:s', strtotime($timestamp)),
-                                    'tipe' => 'Tidak Dikenal'
-                                ];
-                                $error_count++;
+                                // Mapping dengan guru
+                                $guru_stmt = $conn->prepare("SELECT id_guru FROM guru WHERE user_id = ?");
+                                $guru_stmt->execute([$user['id']]);
+                                $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+
+                                if ($guru) {
+                                    $tanggal = date('Y-m-d', strtotime($timestamp));
+                                    $jam_masuk = date('H:i:s', strtotime($timestamp));
+                                    
+                                    $check_absensi = $conn->prepare("SELECT COUNT(*) FROM absensi_guru WHERE id_guru = ? AND tanggal = ?");
+                                    $check_absensi->execute([$guru['id_guru'], $tanggal]);
+                                    
+                                    if ($check_absensi->fetchColumn() == 0) {
+                                        $insert_absensi = $conn->prepare("INSERT INTO absensi_guru (id_guru, tanggal, status_kehadiran, jam_masuk, catatan) VALUES (?, ?, 'Hadir', ?, 'Absensi via Fingerprint')");
+                                        $insert_absensi->execute([$guru['id_guru'], $tanggal, $jam_masuk]);
+                                    }
+                                    
+                                    $synchronized_data[] = [
+                                        'id_guru' => $guru['id_guru'],
+                                        'nama' => $user['name'],
+                                        'tanggal' => $tanggal,
+                                        'jam_masuk' => $jam_masuk,
+                                        'tipe' => 'Guru'
+                                    ];
+                                } else {
+                                    $synchronized_data[] = [
+                                        'user_id' => $user['id'],
+                                        'nama' => $user['name'],
+                                        'tanggal' => date('Y-m-d', strtotime($timestamp)),
+                                        'jam_masuk' => date('H:i:s', strtotime($timestamp)),
+                                        'tipe' => 'Tidak Dikenal'
+                                    ];
+                                    $error_count++;
+                                }
                             }
+                            $processed_count++;
+                        } else {
+                            $synchronized_data[] = [
+                                'user_id' => $user_id,
+                                'nama' => $user_name,
+                                'tanggal' => date('Y-m-d', strtotime($timestamp)),
+                                'jam_masuk' => date('H:i:s', strtotime($timestamp)),
+                                'tipe' => 'User Tidak Ditemukan'
+                            ];
+                            $error_count++;
                         }
-                        $processed_count++;
-                    } else {
-                        // User tidak ditemukan di tabel users
-                        $synchronized_data[] = [
-                            'user_id' => $user_id,
-                            'nama' => $user_name,
-                            'tanggal' => date('Y-m-d', strtotime($timestamp)),
-                            'jam_masuk' => date('H:i:s', strtotime($timestamp)),
-                            'tipe' => 'User Tidak Ditemukan'
-                        ];
-                        $error_count++;
                     }
+                }
+
+                if ($processed_count > 0) {
+                    $connection_message .= " Berhasil memproses $processed_count data absensi.";
+                    if ($error_count > 0) {
+                        $connection_message .= " $error_count data tidak dapat dipetakan.";
+                    }
+                } else {
+                    $connection_message .= ' Tidak ada data absensi baru.';
                 }
             }
 
-            if ($processed_count > 0) {
-                $connection_message .= " Berhasil memproses $processed_count data absensi.";
-                if ($error_count > 0) {
-                    $connection_message .= " $error_count data tidak dapat dipetakan.";
-                }
-            } else {
-                $connection_message .= ' Tidak ada data absensi baru.';
-            }
+            $zk->enableDevice();
+            $zk->disconnect();
         } else {
-            // Jika gagal terhubung
             $connection_message = 'Gagal terhubung ke perangkat fingerprint. Periksa IP Address: ' . htmlspecialchars($device_ip, ENT_QUOTES);
             $connection_class = 'alert-danger';
         }
     } catch (Exception $e) {
-        // Tangkap error jika terjadi masalah saat menghubungkan
         $connection_message = 'Terjadi kesalahan: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES);
         $connection_class = 'alert-danger';
     }
-    // Jangan redirect, langsung tampilkan hasil
 }
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">Sinkronisasi Fingerprint</h1>
-        </nav>
+        <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <!-- Begin Alert SB Admin 2 -->
+            <h1 class="h3 mb-4 text-gray-800">Sinkronisasi Fingerprint</h1>
+            
             <?php if (!empty($connection_message)): ?>
-                <div class="alert <?php echo $connection_class; ?>" role="alert">
-                    <?php echo $connection_message; ?>
+                <div class="alert <?= $connection_class ?>">
+                    <?= $connection_message ?>
                 </div>
             <?php endif; ?>
-            <!-- End Alert SB Admin 2 -->
 
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Sinkronisasi Data</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="">
+                                <div class="form-group">
+                                    <label>IP Address Device Fingerprint:</label>
+                                    <input type="text" name="device_ip" class="form-control" placeholder="192.168.1.100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipe Sinkronisasi:</label>
+                                    <select name="sync_type" class="form-control">
+                                        <option value="users">Sinkronisasi User</option>
+                                        <option value="attendance">Sinkronisasi Absensi</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Sinkronkan</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (!empty($user_sync_data)): ?>
             <div class="row">
                 <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Sinkronisasi Data Absensi</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">Hasil Sinkronisasi User</h6>
                         </div>
                         <div class="card-body">
-                            <!-- Form untuk input IP dan tombol Sinkronkan -->
-                            <form method="POST" action="">
-                                <div class="form-group">
-                                    <label for="device_ip">IP Address Perangkat Fingerprint:</label>
-                                    <input type="text" id="device_ip" name="device_ip" placeholder="Contoh: 192.168.1.201" required class="form-control">
-                                </div>
-                                <button type="submit" class="btn btn-primary">Sinkronkan</button>
-                            </form>
-
-                            <!-- Tampilkan data absensi jika ada -->
-                            <?php if (!empty($synchronized_data)): ?>
-                                <hr>
-                                <h6 class="m-0 font-weight-bold text-primary">Data Absensi yang Disinkronkan</h6>
-                                <table class="table table-bordered mt-3">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
+                                            <th>UID</th>
+                                            <th>Nama</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($user_sync_data as $user): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($user['uid']) ?></td>
+                                            <td><?= htmlspecialchars($user['name']) ?></td>
+                                            <td><?= htmlspecialchars($user['role']) ?></td>
+                                            <td>
+                                                <span class="badge badge-<?= $user['status'] === 'Added' ? 'success' : 'info' ?>">
+                                                    <?= $user['status'] ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($synchronized_data)): ?>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Hasil Sinkronisasi Absensi</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
                                             <th>Nama</th>
                                             <th>Tanggal</th>
                                             <th>Jam Masuk</th>
@@ -242,36 +335,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['device_ip'])) {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($synchronized_data as $data): ?>
-                                            <tr>
-                                                <td>
-                                                    <?php 
-                                                    if (isset($data['id_siswa'])) {
-                                                        echo 'S-' . htmlspecialchars($data['id_siswa']);
-                                                    } elseif (isset($data['id_guru'])) {
-                                                        echo 'G-' . htmlspecialchars($data['id_guru']);
-                                                    } else {
-                                                        echo htmlspecialchars($data['user_id']);
-                                                    }
-                                                    ?>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($data['nama']); ?></td>
-                                                <td><?php echo htmlspecialchars($data['tanggal']); ?></td>
-                                                <td><?php echo htmlspecialchars($data['jam_masuk']); ?></td>
-                                                <td>
-                                                    <span class="badge badge-<?php echo $data['tipe'] == 'Siswa' ? 'primary' : ($data['tipe'] == 'Guru' ? 'success' : 'warning'); ?>">
-                                                        <?php echo htmlspecialchars($data['tipe']); ?>
-                                                    </span>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td><?= htmlspecialchars($data['nama']) ?></td>
+                                            <td><?= htmlspecialchars($data['tanggal']) ?></td>
+                                            <td><?= htmlspecialchars($data['jam_masuk']) ?></td>
+                                            <td><?= htmlspecialchars($data['tipe']) ?></td>
+                                        </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
-                            <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
+    <?php include '../../templates/footer.php'; ?>
 </div>
-<?php include '../templates/footer.php'; ?>
+</body>
+</html>

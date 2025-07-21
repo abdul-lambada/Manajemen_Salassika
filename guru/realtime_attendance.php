@@ -2,8 +2,8 @@
 session_start();
 $title = "Absensi Real-time";
 $active_page = "realtime_attendance";
-include '../templates/header.php';
-include '../templates/sidebar.php';
+include __DIR__ . '/../templates/header.php';
+include __DIR__ . '/../templates/sidebar.php';
 include '../includes/db.php';
 
 // Ambil data absensi hari ini
@@ -47,15 +47,7 @@ $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
 
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-            <h1 class="h3 mb-0 text-gray-800">Absensi Real-time</h1>
-            <div class="ml-auto">
-                <span class="text-muted">Auto-refresh setiap 30 detik</span>
-                <button class="btn btn-sm btn-primary ml-2" onclick="location.reload()">
-                    <i class="fas fa-sync-alt"></i> Refresh Manual
-                </button>
-            </div>
-        </nav>
+        <?php include __DIR__ . '/../templates/navbar.php'; ?>
         
         <div class="container-fluid">
             <!-- Statistik Hari Ini -->
@@ -231,6 +223,7 @@ $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
+    <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
 
 <script>
@@ -316,4 +309,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../templates/footer.php'; ?> 
+ 

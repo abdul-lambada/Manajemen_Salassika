@@ -201,13 +201,14 @@ try {
 </head>
 
 <body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
+    <?php include __DIR__ . '/../templates/header.php'; ?>
+    <?php include __DIR__ . '/../templates/sidebar.php'; ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+            <!-- <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
                 <h1 class="h3 mb-0 text-gray-800">Absensi Siswa</h1>
-            </nav>
+            </nav> -->
+            <?php include __DIR__ . '/../templates/navbar.php'; ?>
             <div class="container-fluid">
                 <!-- Tampilkan pesan sukses jika ada -->
                 <?php if (!empty($message)): ?>
@@ -515,8 +516,8 @@ try {
                 <?php endif; ?>
             </div>
         </div>
+        <?php include __DIR__ . '/../templates/footer.php'; ?>
     </div>
-    <?php include '../templates/footer.php'; ?>
 </body>
 
 </html>
