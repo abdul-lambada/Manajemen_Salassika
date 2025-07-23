@@ -244,11 +244,87 @@ include __DIR__ . '/../templates/sidebar.php';
                     </div>
                 </div>
             </div>
+            <?php
+if ($role === 'admin') {
+    $today = date('Y-m-d');
+    $stats = [
+        'Hadir' => 0,
+        'Telat' => 0,
+        'Izin' => 0,
+        'Sakit' => 0,
+        'Alfa' => 0
+    ];
+    // Guru
+    $stmt = $conn->prepare("SELECT status_kehadiran, COUNT(*) as total FROM absensi_guru WHERE tanggal = :today GROUP BY status_kehadiran");
+    $stmt->execute([':today' => $today]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $status = $row['status_kehadiran'];
+        if (isset($stats[$status])) $stats[$status] += $row['total'];
+    }
+    // Siswa
+    $stmt = $conn->prepare("SELECT status_kehadiran, COUNT(*) as total FROM absensi_siswa WHERE tanggal = :today GROUP BY status_kehadiran");
+    $stmt->execute([':today' => $today]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $status = $row['status_kehadiran'];
+        if (isset($stats[$status])) $stats[$status] += $row['total'];
+    }
+}
+?>
+<?php if ($role === 'admin'): ?>
+            <div class="row">
+            <div class="col-12">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Statistik Absensi Hari Ini</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="absensiChart" height="80"></canvas>
+                    </div>
+                </div>
+            </div>
+            </div>
         </div>
     </div>
     
     <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
+
+<script src="/absensi_sekolah/assets/vendor/chart.js/Chart.bundle.min.js"></script>
+<script>
+var ctx = document.getElementById('absensiChart').getContext('2d');
+var absensiChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Hadir', 'Telat', 'Izin', 'Sakit', 'Alfa'],
+        datasets: [{
+            label: 'Jumlah',
+            data: [<?= $stats['Hadir'] ?>, <?= $stats['Telat'] ?>, <?= $stats['Izin'] ?>, <?= $stats['Sakit'] ?>, <?= $stats['Alfa'] ?>],
+            backgroundColor: [
+                'rgba(40,167,69,0.7)',
+                'rgba(255,193,7,0.7)',
+                'rgba(23,162,184,0.7)',
+                'rgba(220,53,69,0.7)',
+                'rgba(108,117,125,0.7)'
+            ],
+            borderColor: [
+                'rgba(40,167,69,1)',
+                'rgba(255,193,7,1)',
+                'rgba(23,162,184,1)',
+                'rgba(220,53,69,1)',
+                'rgba(108,117,125,1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../templates/scripts.php'; ?>
 

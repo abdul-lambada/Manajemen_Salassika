@@ -41,18 +41,19 @@ if ($role === 'admin') {
 } elseif ($role === 'guru') {
     $today = date('Y-m-d');
     $id_guru = isset($_SESSION['user']['id_guru']) ? $_SESSION['user']['id_guru'] : null;
-    // Absensi hari ini untuk guru yang login
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM absensi_guru WHERE DATE(tanggal) = :today AND id_guru = :id_guru");
-    $stmt->bindParam(':today', $today);
-    $stmt->bindParam(':id_guru', $id_guru);
-    $stmt->execute();
-    $absensi_today = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    // Tidak ada relasi wali kelas, tampilkan total siswa seluruhnya
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM siswa");
-    $siswa_count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $nama_kelas = null;
-    $status_kehadiran = $absensi_today > 0 ? 'Hadir' : 'Belum Absen';
-    $menu_tersedia = 4; // Bisa dibuat dinamis jika menu bertambah
+    $stats = [
+        'Hadir' => 0,
+        'Telat' => 0,
+        'Izin' => 0,
+        'Sakit' => 0,
+        'Alfa' => 0
+    ];
+    $stmt = $conn->prepare("SELECT status_kehadiran, COUNT(*) as total FROM absensi_guru WHERE tanggal = :today AND id_guru = :id_guru GROUP BY status_kehadiran");
+    $stmt->execute([':today' => $today, ':id_guru' => $id_guru]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $status = $row['status_kehadiran'];
+        if (isset($stats[$status])) $stats[$status] += $row['total'];
+    }
 }
 ?>
 
@@ -237,6 +238,19 @@ if ($role === 'admin') {
                     </div>
                 </div>
             </div>
+            <?php if ($role === 'guru'): ?>
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Statistik Absensi Saya Hari Ini</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="absensiChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
         </div>
     </div>
     
@@ -248,6 +262,44 @@ if ($role === 'admin') {
 <script src="/absensi_sekolah/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/absensi_sekolah/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
 <script src="/absensi_sekolah/assets/js/sb-admin-2.min.js"></script>
+
+
+<script src="/absensi_sekolah/assets/vendor/chart.js/Chart.bundle.min.js"></script>
+<script>
+var ctx = document.getElementById('absensiChart').getContext('2d');
+var absensiChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Hadir', 'Telat', 'Izin', 'Sakit', 'Alfa'],
+        datasets: [{
+            label: 'Jumlah',
+            data: [<?= $stats['Hadir'] ?>, <?= $stats['Telat'] ?>, <?= $stats['Izin'] ?>, <?= $stats['Sakit'] ?>, <?= $stats['Alfa'] ?>],
+            backgroundColor: [
+                'rgba(40,167,69,0.7)',
+                'rgba(255,193,7,0.7)',
+                'rgba(23,162,184,0.7)',
+                'rgba(220,53,69,0.7)',
+                'rgba(108,117,125,0.7)'
+            ],
+            borderColor: [
+                'rgba(40,167,69,1)',
+                'rgba(255,193,7,1)',
+                'rgba(23,162,184,1)',
+                'rgba(220,53,69,1)',
+                'rgba(108,117,125,1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+<?php endif; ?>
 
 </body>
 </html>
