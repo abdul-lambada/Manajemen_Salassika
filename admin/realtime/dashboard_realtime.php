@@ -96,7 +96,7 @@ include '../../templates/sidebar.php';
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Dashboard Real-time</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Dashboard Real-time</h1> -->
             
             <!-- Last Update Indicator -->
             <div class="alert alert-info" id="lastUpdate">

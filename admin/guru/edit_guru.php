@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 $title = "Edit Guru";
 $active_page = "edit_guru";
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Edit Guru</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Edit Guru</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo htmlspecialchars($message); ?>
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             <?php endif; ?>
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Form Edit Guru</h6>
@@ -97,7 +98,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                                 <div class="form-group">
                                     <label>UID (Fingerprint):</label>
-                                    <input type="text" name="uid" class="form-control" value="<?php echo htmlspecialchars($user['uid']); ?>" required>
+                                    <select name="uid" id="uid_select" class="form-control" required>
+                                        <option value="">Pilih UID dari Device Fingerprint</option>
+                                        <?php
+                                        require_once '../../includes/zklib/zklibrary.php';
+                                        include_once '../../includes/fingerprint_config.php';
+                                        $zk = new ZKLibrary(FINGERPRINT_IP, FINGERPRINT_PORT);
+                                        $fingerprint_users = [];
+                                        try {
+                                            if ($zk->connect()) {
+                                                $zk->disableDevice();
+                                                $fingerprint_users = $zk->getUser();
+                                                $zk->enableDevice();
+                                                $zk->disconnect();
+                                            }
+                                        } catch (Exception $e) {}
+                                        if (!empty($fingerprint_users)):
+                                            foreach ($fingerprint_users as $user_fp):
+                                                $privilege = isset($user_fp[2]) ? intval($user_fp[2]) : 0;
+                                                if ($privilege !== 0) continue;
+                                                $selected = ($user && $user['uid'] == $user_fp[0]) ? 'selected' : '';
+                                        ?>
+                                            <option value="<?= htmlspecialchars($user_fp[0]) ?>" data-name="<?= htmlspecialchars($user_fp[1]) ?>" data-role="<?= htmlspecialchars($privilege) ?>" <?= $selected ?>>
+                                                <?= htmlspecialchars($user_fp[0]) ?> - <?= htmlspecialchars($user_fp[1]) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Pilih UID dari device fingerprint untuk auto-fill data. Jika device tidak tersedia, input manual di bawah.
+                                    </small>
                                 </div>
                                 <div class="form-group">
                                     <label>Password (kosongkan jika tidak ingin diubah):</label>
@@ -129,3 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     <?php include '../../templates/footer.php'; ?>
 </div>
+
+<?php include '../../templates/scripts.php'; ?>
+
+<?php
+ob_end_flush();
+?>

@@ -49,7 +49,7 @@ include '../../templates/sidebar.php';
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Edit Kelas</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Edit Kelas</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -59,7 +59,7 @@ include '../../templates/sidebar.php';
                 </div>
             <?php endif; ?>
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Form Edit Kelas</h6>

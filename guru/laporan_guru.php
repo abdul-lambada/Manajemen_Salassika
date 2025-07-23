@@ -74,7 +74,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
         function Header()
         {
             // Logo
-            $logo_path = '../assets/logo.jpg';
+            $logo_path = '../../assets/img/logo.jpg';
             if (file_exists($logo_path)) {
                 $this->Image($logo_path, 10, 10, 20); // Logo sekolah
             } else {
@@ -196,6 +196,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Laporan Absensi Guru - Management Salassika</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="../css/sb-admin-2.css" rel="stylesheet">
 </head>

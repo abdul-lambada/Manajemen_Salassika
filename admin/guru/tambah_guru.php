@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Tambah Guru</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Tambah Guru</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo htmlspecialchars($message); ?>
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             <?php endif; ?>
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Form Tambah Guru</h6>
@@ -98,7 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <option value="">Pilih UID dari Device Fingerprint</option>
                                         <?php if (!empty($fingerprint_users)): ?>
                                             <?php foreach ($fingerprint_users as $user): ?>
-                                                <option value="<?= htmlspecialchars($user[0]) ?>" data-name="<?= htmlspecialchars($user[1]) ?>" data-role="<?= htmlspecialchars(isset($user[2]) ? $user[2] : 'pendaftar') ?>">
+                                                <?php
+                                                    // Filter hanya privilege 0 (User)
+                                                    $privilege = isset($user[2]) ? intval($user[2]) : 0;
+                                                    if ($privilege !== 0) continue;
+                                                ?>
+                                                <option value="<?= htmlspecialchars($user[0]) ?>" data-name="<?= htmlspecialchars($user[1]) ?>" data-role="<?= htmlspecialchars($privilege) ?>">
                                                     <?= htmlspecialchars($user[0]) ?> - <?= htmlspecialchars($user[1]) ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -152,6 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     <?php include '../../templates/footer.php'; ?>
 </div>
+
+<?php include '../../templates/scripts.php'; ?>
+
 <script>
     // Auto-fill nama berdasarkan UID yang dipilih
     document.getElementById('uid_select').addEventListener('change', function() {

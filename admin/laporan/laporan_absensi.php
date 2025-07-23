@@ -122,7 +122,7 @@ include '../../templates/sidebar.php';
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Laporan Absensi</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Laporan Absensi</h1> -->
 
             <?php if (!empty($error_message)): ?>
                 <div class="alert alert-danger">
@@ -271,9 +271,14 @@ include '../../templates/sidebar.php';
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Data Absensi</h6>
-                    <a href="export_excel.php?<?= http_build_query($_GET) ?>" class="btn btn-success btn-sm">
-                        <i class="fas fa-file-excel"></i> Export Excel
-                    </a>
+                    <div>
+                        <a href="export_excel.php?<?= http_build_query($_GET) ?>" class="btn btn-success btn-sm mr-2">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </a>
+                        <a href="export_pdf.php?<?= http_build_query($_GET) ?>" class="btn btn-danger btn-sm">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -355,6 +360,8 @@ include '../../templates/sidebar.php';
     </div>
     <?php include '../../templates/footer.php'; ?>
 </div>
+
+<?php include '../../templates/scripts.php'; ?>
 
 </body>
 </html> 

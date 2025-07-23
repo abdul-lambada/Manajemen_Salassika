@@ -1,7 +1,7 @@
 <?php
 session_start();
 include __DIR__ . '/../includes/db.php';
-$title = "Dashboard";
+$title = "Dashboard Admin";
 $active_page = "dashboard";
 
 // Check if user is logged in
@@ -209,7 +209,7 @@ include __DIR__ . '/../templates/sidebar.php';
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                             Menu Tersedia</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">4 Menu</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">10 Menu</div>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-bars fa-2x text-gray-300"></i>
@@ -250,11 +250,7 @@ include __DIR__ . '/../templates/sidebar.php';
     <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
 
-<!-- JS SB Admin -->
-<script src="/absensi_sekolah/assets/vendor/jquery/jquery.min.js"></script>
-<script src="/absensi_sekolah/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/absensi_sekolah/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="/absensi_sekolah/assets/js/sb-admin-2.min.js"></script>
+<?php include __DIR__ . '/../templates/scripts.php'; ?>
 
 </body>
 </html>

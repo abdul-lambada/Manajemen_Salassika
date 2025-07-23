@@ -49,7 +49,7 @@ switch ($status) {
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">List Jurusan</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">List Jurusan</h1> -->
             <!-- Begin Alert SB Admin 2 -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
@@ -85,33 +85,37 @@ switch ($status) {
                                             <td><?php echo htmlspecialchars($jurusan['nama_jurusan']); ?></td>
                                             <td>
                                                 <a href="edit_jurusan.php?id=<?php echo $jurusan['id_jurusan']; ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"> Edit</i></a>
-                                                <!-- Tombol hapus dengan modal per baris -->
-                                                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#hapusModal<?php echo $jurusan['id_jurusan']; ?>">
+                                                <button type="button" class="btn btn-danger btn-sm btn-hapus-jurusan"
+                                                    data-id="<?php echo $jurusan['id_jurusan']; ?>"
+                                                    data-nama="<?php echo htmlspecialchars($jurusan['nama_jurusan']); ?>"
+                                                    data-toggle="modal" data-target="#hapusModal">
                                                     <i class="fas fa-trash"> Hapus</i>
                                                 </button>
-                                                <!-- Modal Konfirmasi Hapus -->
-                                                <div class="modal fade" id="hapusModal<?php echo $jurusan['id_jurusan']; ?>" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel<?php echo $jurusan['id_jurusan']; ?>" aria-hidden="true">
-                                                  <div class="modal-dialog" role="document">
-                                                    <div class="modal-content">
-                                                      <div class="modal-header">
-                                                        <h5 class="modal-title" id="hapusModalLabel<?php echo $jurusan['id_jurusan']; ?>">Hapus Data</h5>
-                                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                                          <span aria-hidden="true">&times;</span>
-                                                        </button>
-                                                      </div>
-                                                      <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-                                                      <div class="modal-footer">
-                                                        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                                                        <a class="btn btn-primary" href="hapus_jurusan.php?id=<?php echo $jurusan['id_jurusan']; ?>">Hapus</a>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            <!-- Modal Hapus Global -->
+                            <div class="modal fade" id="hapusModal" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel" aria-hidden="true">
+                              <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="hapusModalLabel">Konfirmasi Hapus</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Apakah Anda yakin ingin menghapus jurusan <b id="namaJurusanHapus"></b>?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <a href="#" id="btnHapusJurusan" class="btn btn-danger">Hapus</a>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                             <!-- Dynamic Pagination -->
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-end">
@@ -147,4 +151,20 @@ switch ($status) {
         </div>
     </div>
     <?php include '../../templates/footer.php'; ?>
-    <!-- Hapus modal global dan script JS hapus -->
+    <!-- jQuery -->
+    <script src="../../assets/vendor/jquery/jquery.min.js"></script>
+    <!-- Bootstrap core JavaScript-->
+    <script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        var namaJurusanHapus = $('#namaJurusanHapus');
+        var btnHapusJurusan = $('#btnHapusJurusan');
+        $('.btn-hapus-jurusan').on('click', function() {
+            var id = $(this).data('id');
+            var nama = $(this).data('nama');
+            var link = 'hapus_jurusan.php?id=' + encodeURIComponent(id);
+            namaJurusanHapus.text(nama);
+            btnHapusJurusan.attr('href', link);
+        });
+    });
+    </script>

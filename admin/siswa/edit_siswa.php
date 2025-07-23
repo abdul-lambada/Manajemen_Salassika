@@ -112,12 +112,7 @@ include '../../templates/sidebar.php';
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         
-        <div class="container-fluid">
-            <!-- Page Heading -->
-            <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Edit Siswa</h1>
-            </div>
-            
+        <div class="container-fluid">          
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">Form Edit Siswa</h6>
@@ -141,7 +136,35 @@ include '../../templates/sidebar.php';
                         </div>
                         <div class="form-group">
                             <label>UID (Fingerprint)</label>
-                            <input type="text" name="uid" class="form-control" value="<?= htmlspecialchars($siswa['user_uid']) ?>" required>
+                            <select name="uid" id="uid_select" class="form-control" required>
+                                <option value="">Pilih UID dari Device Fingerprint</option>
+                                <?php
+                                require_once '../../includes/zklib/zklibrary.php';
+                                include_once '../../includes/fingerprint_config.php';
+                                $zk = new ZKLibrary(FINGERPRINT_IP, FINGERPRINT_PORT);
+                                $fingerprint_users = [];
+                                try {
+                                    if ($zk->connect()) {
+                                        $zk->disableDevice();
+                                        $fingerprint_users = $zk->getUser();
+                                        $zk->enableDevice();
+                                        $zk->disconnect();
+                                    }
+                                } catch (Exception $e) {}
+                                if (!empty($fingerprint_users)):
+                                    foreach ($fingerprint_users as $user_fp):
+                                        $role = isset($user_fp[2]) ? strtolower($user_fp[2]) : 'pendaftar';
+                                        if ($role !== 'pendaftar') continue;
+                                        $selected = ($siswa && $siswa['user_uid'] == $user_fp[0]) ? 'selected' : '';
+                                ?>
+                                    <option value="<?= htmlspecialchars($user_fp[0]) ?>" data-name="<?= htmlspecialchars($user_fp[1]) ?>" data-role="<?= htmlspecialchars($role) ?>" <?= $selected ?>>
+                                        <?= htmlspecialchars($user_fp[0]) ?> - <?= htmlspecialchars($user_fp[1]) ?>
+                                    </option>
+                                <?php endforeach; endif; ?>
+                            </select>
+                            <small class="form-text text-muted">
+                                Pilih UID dari device fingerprint untuk auto-fill data. Jika device tidak tersedia, input manual di bawah.
+                            </small>
                         </div>
                         <div class="form-group">
                             <label>Password Baru (kosongkan jika tidak ingin diubah)</label>

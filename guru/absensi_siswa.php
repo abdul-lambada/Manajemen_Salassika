@@ -164,6 +164,12 @@ try {
     $stmt_stats->execute();
     $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
 
+    // Ambil pengaturan jam kerja
+    $jam_kerja_stmt = $conn->query("SELECT * FROM tbl_jam_kerja WHERE id = 1");
+    $jam_kerja = $jam_kerja_stmt->fetch(PDO::FETCH_ASSOC);
+    $jam_masuk = $jam_kerja ? $jam_kerja['jam_masuk'] : '06:30:00';
+    $toleransi = $jam_kerja ? (int)$jam_kerja['toleransi_telat_menit'] : 5;
+
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
     exit;
@@ -177,6 +183,7 @@ try {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Absensi Siswa - Management Salassika</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="../css/sb-admin-2.css" rel="stylesheet">
     <style>
@@ -402,13 +409,29 @@ try {
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
-                                                        <select name="status[<?php echo $siswa['id_siswa']; ?>]" class="form-control">
-                                                            <option value="Hadir" <?php echo ($siswa['status_manual'] == 'Hadir') ? 'selected' : ''; ?>>Hadir</option>
-                                                            <option value="Telat" <?php echo ($siswa['status_manual'] == 'Telat') ? 'selected' : ''; ?>>Telat</option>
+                                                        <?php
+                                                        $auto_status = '';
+                                                        if ($siswa['waktu_fingerprint']) {
+                                                            $jam_masuk_full = date('Y-m-d') . ' ' . $jam_masuk;
+                                                            $batas_telat = strtotime($jam_masuk_full) + ($toleransi * 60);
+                                                            $waktu_fp = strtotime($siswa['waktu_fingerprint']);
+                                                            if ($waktu_fp <= $batas_telat) {
+                                                                $auto_status = 'Hadir';
+                                                            } else {
+                                                                $auto_status = 'Telat';
+                                                            }
+                                                        }
+                                                        ?>
+                                                        <select name="status[<?php echo $siswa['id_siswa']; ?>]" class="form-control" <?php if ($siswa['waktu_fingerprint']) echo 'disabled'; ?> >
+                                                            <option value="Hadir" <?php echo ($siswa['status_manual'] == 'Hadir' || $auto_status == 'Hadir') ? 'selected' : ''; ?>>Hadir</option>
+                                                            <option value="Telat" <?php echo ($siswa['status_manual'] == 'Telat' || $auto_status == 'Telat') ? 'selected' : ''; ?>>Telat</option>
                                                             <option value="Tidak Hadir" <?php echo ($siswa['status_manual'] == 'Tidak Hadir') ? 'selected' : ''; ?>>Tidak Hadir</option>
                                                             <option value="Sakit" <?php echo ($siswa['status_manual'] == 'Sakit') ? 'selected' : ''; ?>>Sakit</option>
                                                             <option value="Ijin" <?php echo ($siswa['status_manual'] == 'Ijin') ? 'selected' : ''; ?>>Ijin</option>
                                                         </select>
+                                                        <?php if ($siswa['waktu_fingerprint']): ?>
+                                                            <input type="hidden" name="status[<?php echo $siswa['id_siswa']; ?>]" value="<?php echo $auto_status; ?>">
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td>
                                                         <input type="text" name="catatan[<?php echo $siswa['id_siswa']; ?>]" 

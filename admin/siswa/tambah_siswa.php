@@ -108,9 +108,9 @@ include '../../templates/sidebar.php';
         
         <div class="container-fluid">
             <!-- Page Heading -->
-            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <!-- <div class="d-sm-flex align-items-center justify-content-between mb-4">
                 <h1 class="h3 mb-0 text-gray-800">Tambah Siswa</h1>
-            </div>
+            </div> -->
             
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
@@ -130,9 +130,12 @@ include '../../templates/sidebar.php';
                                 <option value="">Pilih UID dari Device Fingerprint</option>
                                 <?php if (!empty($fingerprint_users)): ?>
                                     <?php foreach ($fingerprint_users as $user): ?>
-                                        <option value="<?= htmlspecialchars($user[0]) ?>" 
-                                                data-name="<?= htmlspecialchars($user[1]) ?>"
-                                                data-role="<?= htmlspecialchars($user[2] ?? 'pendaftar') ?>">
+                                        <?php
+                                            // Filter hanya role/hak 'pendaftar' (case-insensitive)
+                                            $role = isset($user[2]) ? strtolower($user[2]) : 'pendaftar';
+                                            if ($role !== 'pendaftar') continue;
+                                        ?>
+                                        <option value="<?= htmlspecialchars($user[0]) ?>" data-name="<?= htmlspecialchars($user[1]) ?>" data-role="<?= htmlspecialchars($role) ?>">
                                             <?= htmlspecialchars($user[0]) ?> - <?= htmlspecialchars($user[1]) ?>
                                         </option>
                                     <?php endforeach; ?>

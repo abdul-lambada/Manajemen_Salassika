@@ -37,19 +37,21 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
     $active_page = 'laporan_siswa';
 } elseif (preg_match('#/admin/laporan/laporan_guru\.php$#', $script)) {
     $active_page = 'laporan_guru';
-} elseif (preg_match('#/admin/laporan/cetak_pdf\.php$#', $script)) {
-    $active_page = 'cetak_pdf';
+} elseif (preg_match('#/admin/laporan/export_pdf\.php$#', $script)) {
+    $active_page = 'export_pdf';
 } elseif (preg_match('#/admin/pengaduan/#', $script)) {
     $active_page = 'pengaduan';
 } elseif (preg_match('#/admin/fingerprint/#', $script)) {
     $active_page = 'fingerprint';
 } elseif (preg_match('#/admin/realtime/#', $script)) {
     $active_page = 'realtime';
-} elseif (preg_match('#/admin/export_pdf\.php$#', $script)) {
-    $active_page = 'export_pdf';
+} elseif (preg_match('#/admin/pengaturan_jam_kerja\.php$#', $script)) {
+    $active_page = 'pengaturan_jam_kerja';
+} elseif (preg_match('#/admin/jalankan_sinkronisasi\.php$#', $script)) {
+    $active_page = 'jalankan_sinkronisasi';
 } elseif (preg_match('#/admin/optimize_database\.php$#', $script)) {
     $active_page = 'optimize_database';
-} elseif (preg_match('#/admin/profil\.php$#', $script)) {
+} elseif (preg_match('#/profil\.php$#', $script)) {
     $active_page = 'profil';
 } elseif (preg_match('#/guru/absensi_guru\.php$#', $script)) {
     $active_page = 'absensi_guru';
@@ -67,7 +69,7 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
     $active_page = 'realtime_attendance';
 } elseif (preg_match('#/guru/list_users_guru\.php$#', $script)) {
     $active_page = 'list_users_guru';
-} elseif (preg_match('#/guru/profil\.php$#', $script)) {
+} elseif (preg_match('#/guru/profil\.php$#', $script)) { // Keep this for backward compatibility if needed, but new logic is better
     $active_page = 'profil';
 }
 ?>
@@ -75,8 +77,10 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
     <!-- Sidebar - Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?php echo ($role === 'admin') ? '/absensi_sekolah/admin/index.php' : '/absensi_sekolah/guru/index.php'; ?>">
-        <div class="sidebar-brand-icon rotate-n-15">
-            <i class="fas fa-school"></i>
+        <div class="sidebar-brand-icon">
+            <img class="img-profile rounded-circle"
+                src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '/absensi_sekolah/' . $_SESSION['user']['avatar'] : '/absensi_sekolah/assets/img/undraw_profile.svg'; ?>"
+                alt="Profil" style="width: 40px; height: 40px;">
         </div>
         <div class="sidebar-brand-text mx-3">Absensi Sekolah</div>
     </a>
@@ -120,7 +124,7 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
         <div class="sidebar-heading">Fitur</div>
 
         <?php
-        $laporan_pages = array('laporan_absensi','laporan_siswa','laporan_guru','cetak_pdf');
+        $laporan_pages = array('laporan_absensi','laporan_siswa','laporan_guru');
         $is_laporan_active = in_array($active_page, $laporan_pages);
         ?>
         <li class="nav-item <?php echo $is_laporan_active ? 'active' : ''; ?>">
@@ -134,7 +138,6 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                     <a class="collapse-item <?php echo ($active_page === 'laporan_absensi') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_absensi.php">Laporan Absensi</a>
                     <a class="collapse-item <?php echo ($active_page === 'laporan_siswa') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_siswa.php">Laporan Siswa</a>
                     <a class="collapse-item <?php echo ($active_page === 'laporan_guru') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_guru.php">Laporan Guru</a>
-                    <a class="collapse-item <?php echo ($active_page === 'cetak_pdf') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/cetak_pdf.php">Cetak PDF</a>
                 </div>
             </div>
         </li>
@@ -154,9 +157,14 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-broadcast-tower"></i><span>Realtime</span>
             </a>
         </li>
-        <li class="nav-item <?php echo ($active_page === 'export_pdf') ? 'active' : ''; ?>">
-            <a class="nav-link" href="/absensi_sekolah/admin/export_pdf.php">
-                <i class="fas fa-file-pdf"></i><span>Export PDF</span>
+        <li class="nav-item <?php echo ($active_page === 'pengaturan_jam_kerja') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/admin/pengaturan_jam_kerja.php">
+                <i class="fas fa-clock"></i><span>Pengaturan Jam Kerja</span>
+            </a>
+        </li>
+        <li class="nav-item <?php echo ($active_page === 'jalankan_sinkronisasi') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/admin/jalankan_sinkronisasi.php">
+                <i class="fas fa-sync-alt"></i><span>Sinkronisasi Absensi</span>
             </a>
         </li>
         <li class="nav-item <?php echo ($active_page === 'optimize_database') ? 'active' : ''; ?>">
@@ -166,14 +174,19 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
         </li>
         <hr class="sidebar-divider">
         <li class="nav-item <?php echo ($active_page === 'profil') ? 'active' : ''; ?>">
-            <a class="nav-link" href="/absensi_sekolah/admin/profil.php">
+            <a class="nav-link" href="/absensi_sekolah/profil.php">
                 <i class="fas fa-user"></i><span>Profil</span>
             </a>
         </li>
 
     <?php elseif ($role === 'guru'): ?>
-        <div class="sidebar-heading">Absensi & Laporan</div>
-
+        <div class="sidebar-heading">Menu Guru</div>
+        <!-- <li class="nav-item <?php echo ($active_page === 'dashboard') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/guru/index.php">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li> -->
         <li class="nav-item <?php echo ($active_page === 'absensi_guru') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/guru/absensi_guru.php">
                 <i class="fas fa-user-check"></i><span>Absensi Guru</span>
@@ -184,32 +197,21 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-user-clock"></i><span>Absensi Siswa</span>
             </a>
         </li>
-
-        <?php
-        $laporan_guru_pages = array('laporan_guru','laporan_siswa');
-        $is_laporan_guru_active = in_array($active_page, $laporan_guru_pages);
-        ?>
-        <li class="nav-item <?php echo $is_laporan_guru_active ? 'active' : ''; ?>">
-            <a class="nav-link collapsed" href="javascript:void(0);" data-toggle="collapse" data-target="#collapseLaporanGuru"
-               aria-expanded="<?php echo $is_laporan_guru_active ? 'true' : 'false'; ?>" aria-controls="collapseLaporanGuru">
-                <i class="fas fa-file-alt"></i><span>Laporan</span>
+        <li class="nav-item <?php echo ($active_page === 'laporan_guru') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/guru/laporan_guru.php">
+                <i class="fas fa-file-alt"></i><span>Laporan Guru</span>
             </a>
-            <div id="collapseLaporanGuru" class="collapse <?php echo $is_laporan_guru_active ? 'show' : ''; ?>" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?php echo ($active_page === 'laporan_guru') ? 'active' : ''; ?>" href="/absensi_sekolah/guru/laporan_guru.php">Laporan Guru</a>
-                    <a class="collapse-item <?php echo ($active_page === 'laporan_siswa') ? 'active' : ''; ?>" href="/absensi_sekolah/guru/laporan_siswa.php">Laporan Siswa</a>
-                </div>
-            </div>
         </li>
-
+        <li class="nav-item <?php echo ($active_page === 'laporan_siswa') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/guru/laporan_siswa.php">
+                <i class="fas fa-file-alt"></i><span>Laporan Siswa</span>
+            </a>
+        </li>
         <li class="nav-item <?php echo ($active_page === 'log_absensi') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/guru/log_absensi.php">
                 <i class="fas fa-clipboard-list"></i><span>Log Absensi</span>
             </a>
         </li>
-
-        <div class="sidebar-heading">Fitur Lain</div>
-
         <li class="nav-item <?php echo ($active_page === 'monitor_fingerprint') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/guru/monitor_fingerprint.php">
                 <i class="fas fa-fingerprint"></i><span>Monitor Fingerprint</span>
@@ -225,10 +227,9 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-user-cog"></i><span>Data User Guru</span>
             </a>
         </li>
-
         <hr class="sidebar-divider">
         <li class="nav-item <?php echo ($active_page === 'profil') ? 'active' : ''; ?>">
-            <a class="nav-link" href="/absensi_sekolah/guru/profil.php">
+            <a class="nav-link" href="/absensi_sekolah/profil.php">
                 <i class="fas fa-user"></i><span>Profil</span>
             </a>
         </li>

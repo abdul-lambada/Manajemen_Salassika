@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../includes/db.php';
+include '../../includes/db.php';
 $active_page = "laporan_siswa"; // Untuk menandai menu aktif di sidebar
 
 // Periksa apakah sesi 'user' tersedia
@@ -56,23 +56,10 @@ $absensi_list = $stmt_absensi->fetchAll(PDO::FETCH_ASSOC);
 
 // Tombol Download Laporan
 if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
-    // Check if we can find FPDF in different locations
-    $fpdf_paths = [
-        '../vendor/fpdf/fpdf.php',
-        '../fpdf/fpdf.php',
-        '../lib/fpdf/fpdf.php',
-        '../includes/fpdf/fpdf.php',
-        '../assets/vendor/fpdf/fpdf.php'
-    ];
-    $fpdf_found = false;
-    foreach ($fpdf_paths as $path) {
-        if (file_exists($path)) {
-            require($path);
-            $fpdf_found = true;
-            break;
-        }
-    }
-    if (!$fpdf_found) {
+    $fpdf_path = '../../assets/vendor/fpdf/fpdf.php';
+    if (file_exists($fpdf_path)) {
+        require($fpdf_path);
+    } else {
         echo "FPDF library not found. Please install FPDF or correct the path.";
         echo "<br><a href='laporan_siswa.php'>Back to Report</a>";
         exit;
@@ -85,7 +72,8 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
         function Header()
         {
             // Logo
-            $logo_path = '../assets/logo.jpg';
+            $logo_path = '../../assets/img/logo.jpg';
+            // $logo_path = '../assets/img/logo.jpg';
             if (file_exists($logo_path)) {
                 $this->Image($logo_path, 10, 10, 20); // Logo sekolah
             } else {
@@ -208,13 +196,13 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
     <link href="../css/sb-admin-2.css" rel="stylesheet">
 </head>
 <body id="page-top">
-    <?php include '../templates/header.php'; ?>
-    <?php include '../templates/sidebar.php'; ?>
+    <?php include '../../templates/header.php'; ?>
+    <?php include '../../templates/sidebar.php'; ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-            <?php include '../templates/navbar.php'; ?>
+            <?php include '../../templates/navbar.php'; ?>
             <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h3 mb-0 text-gray-800">Laporan Absensi Siswa</h1>
+                <!-- <h1 class="h3 mb-0 text-gray-800">Laporan Absensi Siswa</h1> -->
             </nav>
             <div class="container-fluid">
                 <div class="row">
@@ -293,7 +281,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'pdf') {
                 </div>
             </div>
         </div>
+        <?php include '../../templates/footer.php'; ?>
     </div>
-    <?php include '../templates/footer.php'; ?>
 </body>
 </html>

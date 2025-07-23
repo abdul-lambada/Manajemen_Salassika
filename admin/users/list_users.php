@@ -100,40 +100,37 @@ switch ($status) {
                                             <td><?php echo htmlspecialchars($user['uid']); ?></td>
                                             <td><?php echo htmlspecialchars($user['created_at']); ?></td>
                                             <td>
-                                                <a href="#" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal<?php echo $user['id']; ?>">
+                                                <button type="button" class="btn btn-danger btn-sm btn-hapus-user"
+                                                    data-id="<?php echo $user['id']; ?>"
+                                                    data-nama="<?php echo htmlspecialchars($user['name']); ?>"
+                                                    data-toggle="modal" data-target="#hapusModal">
                                                     <i class="fas fa-trash"></i> Hapus
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
-                                        
-                                        <!-- Delete Confirmation Modal -->
-                                        <div class="modal fade" id="deleteModal<?php echo $user['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Konfirmasi Hapus</h5>
-                                                        <button type="button" class="close" data-dismiss="modal">
-                                                            <span>&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Apakah Anda yakin ingin menghapus user ini?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                                                            Batal
-                                                        </button>
-                                                        <a href="hapus_users.php?id=<?php echo $user['id']; ?>" 
-                                                           class="btn btn-danger">
-                                                            Hapus
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            <!-- Modal Hapus Global -->
+                            <div class="modal fade" id="hapusModal" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="hapusModalLabel">Konfirmasi Hapus</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Apakah Anda yakin ingin menghapus user <b id="namaUserHapus"></b>?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                            <a href="#" id="btnHapusUser" class="btn btn-danger">Hapus</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Dynamic Pagination -->
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-end">
@@ -168,35 +165,23 @@ switch ($status) {
             </div>
         </div>
     </div>
-</div>
-
-<!-- Modal Konfirmasi Hapus -->
-<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Hapus Data</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <a class="btn btn-primary" href="hapus_users.php?id=<?php echo $users['id']; ?>">Hapus</a>
-            </div>
-        </div>
-    </div>
     <?php include '../../templates/footer.php'; ?>
 </div>
 
+<!-- jQuery -->
+<script src="../../assets/vendor/jquery/jquery.min.js"></script>
+<!-- Bootstrap core JavaScript-->
+<script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Handle modal delete button dynamically
-    $('#logoutModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget); // Button that triggered the modal
-        var userId = button.data('id'); // Extract info from data-* attributes
-        var modal = $(this);
-        modal.find('.delete-user-btn').attr('href', 'hapus_user.php?id=' + userId);
+$(document).ready(function() {
+    var namaUserHapus = $('#namaUserHapus');
+    var btnHapusUser = $('#btnHapusUser');
+    $('.btn-hapus-user').on('click', function() {
+        var id = $(this).data('id');
+        var nama = $(this).data('nama');
+        var link = 'hapus_users.php?id=' + encodeURIComponent(id);
+        namaUserHapus.text(nama);
+        btnHapusUser.attr('href', link);
     });
+});
 </script>

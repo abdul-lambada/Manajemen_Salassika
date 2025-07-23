@@ -185,7 +185,7 @@ $uid_available = array_diff($all_uid, $uid_used);
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Kelola Pengguna Fingerprint</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Kelola Pengguna Fingerprint</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -365,6 +365,19 @@ $uid_available = array_diff($all_uid, $uid_used);
     </div>
     <?php include '../../templates/footer.php'; ?>
 </div>
+
+<!-- jQuery -->
+<script src="../../assets/vendor/jquery/jquery.min.js"></script>
+<!-- Bootstrap core JavaScript-->
+<script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script>
+$(function () {
+  $('#fingerprintTab a[data-toggle="tab"]').on('click', function (e) {
+    e.preventDefault();
+    $(this).tab('show');
+  });
+});
+</script>
 <script>
 document.getElementById('user_type').addEventListener('change', function() {
     const userType = this.value;

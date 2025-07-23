@@ -4,10 +4,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     header("Location: ../../auth/login.php");
     exit;
 }
-$title = "Edit Jurusan";
-$active_page = "edit_jurusan";
-include '../../templates/header.php';
-include '../../templates/sidebar.php';
+
 include '../../includes/db.php';
 $message = '';
 $alert_class = '';
@@ -16,13 +13,7 @@ if (!isset($_GET['id'])) {
     exit;
 }
 $id_jurusan = $_GET['id'];
-$stmt = $conn->prepare("SELECT * FROM jurusan WHERE id_jurusan = ?");
-$stmt->execute([$id_jurusan]);
-$jurusan = $stmt->fetch(PDO::FETCH_ASSOC);
-if (!$jurusan) {
-    header('Location: list_jurusan.php?status=error');
-    exit;
-}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama_jurusan = trim($_POST['nama_jurusan']);
     if (!empty($nama_jurusan)) {
@@ -39,12 +30,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $alert_class = 'alert-warning';
     }
 }
+
+$stmt = $conn->prepare("SELECT * FROM jurusan WHERE id_jurusan = ?");
+$stmt->execute([$id_jurusan]);
+$jurusan = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$jurusan) {
+    header('Location: list_jurusan.php?status=error');
+    exit;
+}
+
+$title = "Edit Jurusan";
+$active_page = "edit_jurusan";
+include '../../templates/header.php';
+include '../../templates/sidebar.php';
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Edit Jurusan</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Edit Jurusan</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -54,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-12">
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Form Edit Jurusan</h6>

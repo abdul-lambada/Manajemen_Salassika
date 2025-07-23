@@ -93,6 +93,7 @@ try {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Monitor Fingerprint - Management Salassika</title>
+    <link rel="icon" type="image/jpeg" href="../assets/img/logo.jpg">
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="../css/sb-admin-2.css" rel="stylesheet">
     <script src="../vendor/chart.js/Chart.js"></script>
@@ -137,6 +138,26 @@ try {
                 opacity: 1;
             }
         }
+
+        .pulsing-badge {
+            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
     </style>
 </head>
 
@@ -148,12 +169,14 @@ try {
             
             <?php include __DIR__ . '/../templates/navbar.php'; ?>
             <div class="container-fluid">
-                <h1 class="h3 mb-0 text-gray-800">Monitor Fingerprint</h1>
-                <div class="ml-auto py-2">
-                    <span class="real-time-indicator">
-                        <i class="fas fa-circle text-success"></i> Real-time
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <!-- <h1 class="h3 mb-0 font-weight-bold text-gray-800">Monitor Fingerprint</h1> -->
+                    <span class="badge badge-pill badge-success d-flex align-items-center px-3 py-2 pulsing-badge" style="font-size: 1rem;">
+                        <i class="fas fa-circle mr-2" style="font-size: 0.8rem;"></i>
+                        Real-time
                     </span>
                 </div>
+
                 <!-- Statistik Fingerprint -->
                 <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-4">

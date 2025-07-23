@@ -20,18 +20,18 @@
                     ?>
                 </span>
                 <img class="img-profile rounded-circle"
-                    src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '../' . $_SESSION['user']['avatar'] : '/absensi_sekolah/assets/img/undraw_profile.svg'; ?>"
+                    src="<?php echo isset($_SESSION['user']['avatar']) && $_SESSION['user']['avatar'] ? '/absensi_sekolah/' . $_SESSION['user']['avatar'] : '/absensi_sekolah/assets/img/undraw_profile.svg'; ?>"
                     alt="Profil">
             </a>
             <!-- Dropdown - User Information -->
             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                 aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="profil.php">
+                <a class="dropdown-item" href="/absensi_sekolah/profil.php">
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     Profil
                 </a>
                 <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="../auth/logout.php" onclick="return confirm('Apakah Anda yakin ingin logout?');">
+                <a class="dropdown-item" href="/absensi_sekolah/auth/logout.php" onclick="return confirm('Apakah Anda yakin ingin logout?');">
                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                     Logout
                 </a>

@@ -247,7 +247,7 @@ include '../templates/sidebar.php';
     <div id="content">
         <?php include '../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">Optimasi Database</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">Optimasi Database</h1> -->
 
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">

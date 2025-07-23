@@ -1,7 +1,7 @@
 <?php
 session_start();
 include __DIR__ . '/../includes/db.php';
-$title = "Dashboard";
+$title = "Dashboard Guru";
 $active_page = "dashboard";
 
 // Check if user is logged in

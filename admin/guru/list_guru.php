@@ -59,9 +59,10 @@ switch ($status) {
 }
 // Proses import Excel jika ada upload
 if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
-    require_once '../../vendor/phpoffice/phpspreadsheet/src/Bootstrap.php';
+    require_once '../../vendor/autoload.php';
+    require_once '../../vendor/phpoffice/phpexcel/Classes/PHPExcel/IOFactory.php';
     $file = $_FILES['excel_file']['tmp_name'];
-    $spreadsheet = IOFactory::load($file);
+    $spreadsheet = PHPExcel_IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet();
     $rows = $sheet->toArray();
     if (empty($rows) || !isset($rows[0]) || count($rows[0]) < 2) {
@@ -104,7 +105,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <h1 class="h3 mb-4 text-gray-800">List Guru</h1>
+            <!-- <h1 class="h3 mb-4 text-gray-800">List Guru</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -153,26 +154,13 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
                                                 <td><?php echo htmlspecialchars($guru['alamat']); ?></td>
                                                 <td><?php echo htmlspecialchars(isset($guru['user_name']) ? $guru['user_name'] : 'Tidak ada user'); ?></td>
                                                 <td>
-                                                    <a href="edit_guru.php?id=<?php echo htmlspecialchars($guru['id_guru']); ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
-                                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#hapusModal<?php echo $guru['id_guru']; ?>"><i class="fas fa-trash"></i> Hapus</button>
-                                                    <!-- Modal Konfirmasi Hapus -->
-                                                    <div class="modal fade" id="hapusModal<?php echo $guru['id_guru']; ?>" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel<?php echo $guru['id_guru']; ?>" aria-hidden="true">
-                                                      <div class="modal-dialog" role="document">
-                                                        <div class="modal-content">
-                                                          <div class="modal-header">
-                                                            <h5 class="modal-title" id="hapusModalLabel<?php echo $guru['id_guru']; ?>">Hapus Data</h5>
-                                                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                                                              <span aria-hidden="true">&times;</span>
-                                                            </button>
-                                                          </div>
-                                                          <div class="modal-body">Apakah Kamu Yakin, Akan Menghapus Data Ini.!</div>
-                                                          <div class="modal-footer">
-                                                            <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                                                            <a class="btn btn-primary" href="hapus_guru.php?id=<?php echo $guru['id_guru']; ?>">Hapus</a>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </div>
+                                                    <a href="edit_guru.php?id=<?php echo htmlspecialchars($guru['id_guru']); ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                                    <button type="button" class="btn btn-danger btn-sm btn-hapus-guru"
+                                                        data-id="<?php echo $guru['id_guru']; ?>"
+                                                        data-nama="<?php echo htmlspecialchars($guru['nama_guru']); ?>"
+                                                        data-toggle="modal" data-target="#hapusModal">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -183,6 +171,27 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
                                     <?php endif; ?>
                                 </tbody>
                             </table>
+                            <!-- Modal Hapus Global -->
+                            <div class="modal fade" id="hapusModal" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel" aria-hidden="true">
+                              <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="hapusModalLabel">Konfirmasi Hapus</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Apakah Anda yakin ingin menghapus guru <b id="namaGuruHapus"></b>?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <a href="#" id="btnHapusGuru" class="btn btn-danger">Hapus</a>
+                                    <span id="linkHapusGuru" style="margin-left:10px;"></span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                             <!-- Dynamic Pagination -->
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-end">
@@ -218,4 +227,20 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
         </div>
     </div>
     <?php include '../../templates/footer.php'; ?>
+    <?php include '../../templates/scripts.php'; ?>
+    <script>
+    $(document).ready(function() {
+        var namaGuruHapus = $('#namaGuruHapus');
+        var btnHapusGuru = $('#btnHapusGuru');
+        var linkHapusGuru = $('#linkHapusGuru');
+        $('.btn-hapus-guru').on('click', function() {
+            var id = $(this).data('id');
+            var nama = $(this).data('nama');
+            var link = 'hapus_guru.php?id=' + encodeURIComponent(id);
+            namaGuruHapus.text(nama);
+            btnHapusGuru.attr('href', link);
+            // linkHapusGuru.html('<small>Link: <a href="' + link + '">' + link + '</a></small>');
+        });
+    });
+    </script>
 </div>

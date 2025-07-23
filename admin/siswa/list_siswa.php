@@ -69,9 +69,10 @@ switch ($status) {
 
 // Proses import Excel jika ada upload
 if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
-    require_once '../../vendor/phpoffice/phpspreadsheet/src/Bootstrap.php';
+    require_once '../../vendor/autoload.php';
+    require_once '../../vendor/phpoffice/phpexcel/Classes/PHPExcel/IOFactory.php';
     $file = $_FILES['excel_file']['tmp_name'];
-    $spreadsheet = IOFactory::load($file);
+    $spreadsheet = PHPExcel_IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet();
     $rows = $sheet->toArray();
     $header = array_map('strtolower', $rows[0]);
@@ -115,7 +116,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
         <div class="container-fluid">
             <!-- Page Heading -->
             <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                <h1 class="h3 mb-0 text-gray-800">List Siswa</h1>
+                <!-- <h1 class="h3 mb-0 text-gray-800">List Siswa</h1> -->
             </div>
             <?php if (!empty($message)): ?>
                 <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
