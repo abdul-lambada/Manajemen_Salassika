@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../includes/db.php';
+include_once '../includes/email_util.php';
 
 // Periksa apakah sesi 'user' tersedia
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
@@ -53,6 +54,19 @@ try {
                 $stmt_insert->bindParam(':status_kehadiran', $status_kehadiran);
                 $stmt_insert->bindParam(':catatan', $catatan);
                 $stmt_insert->execute();
+            }
+
+            // Setelah absensi disimpan, cek status dan kirim email jika Telat/Izin
+            if (in_array($status_kehadiran, ['Telat', 'Izin'])) {
+                // Ambil email guru
+                $stmt_email = $conn->prepare("SELECT u.email, u.name FROM users u JOIN guru g ON u.id = g.user_id WHERE g.id_guru = ?");
+                $stmt_email->execute([$id_guru]);
+                $user = $stmt_email->fetch(PDO::FETCH_ASSOC);
+                if ($user && !empty($user['email'])) {
+                    $subject = "Notifikasi Absensi: $status_kehadiran";
+                    $body = "<p>Yth. {$user['name']},<br>Anda tercatat <b>$status_kehadiran</b> pada $tanggal.<br>Silakan cek sistem absensi untuk detail.</p>";
+                    sendAbsensiNotification($user['email'], $subject, $body);
+                }
             }
         }
 

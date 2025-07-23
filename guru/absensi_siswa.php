@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../includes/db.php';
+include_once '../includes/email_util.php';
 
 // Periksa apakah sesi 'user' tersedia
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
