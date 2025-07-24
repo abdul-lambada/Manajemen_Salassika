@@ -46,10 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             throw new Exception("NIP sudah digunakan oleh guru lain");
         }
         // Validasi UID unik di users
-        $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ? AND id != ?");
-        $check_uid->execute([$uid, $user['id']]);
-        if ($check_uid->rowCount() > 0) {
-            throw new Exception("UID sudah digunakan user lain");
+        if ($uid !== $user['uid']) {
+            $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ? AND id != ?");
+            $check_uid->execute([$uid, $user['id']]);
+            if ($check_uid->rowCount() > 0) {
+                throw new Exception("UID sudah digunakan user lain");
+            }
         }
         // Update data di tabel guru
         $stmt = $conn->prepare("UPDATE guru SET nip = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id_guru = ?");

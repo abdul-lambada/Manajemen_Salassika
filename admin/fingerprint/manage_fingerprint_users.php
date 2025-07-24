@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $zk->enableDevice();
                         $zk->disconnect();
                         $synced_count = 0;
+                        $warning_msgs = [];
                         foreach ($fingerprint_users as $uid => $user) {
                             $user_id = $user[0];
                             $user_name = $user[1];
@@ -96,17 +97,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             } else {
                                 $role = 'siswa';
                             }
-                            $check_stmt = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+                            $check_stmt = $conn->prepare("SELECT id, name, role FROM users WHERE uid = ?");
                             $check_stmt->execute([$uid]);
                             $user_db = $check_stmt->fetch(PDO::FETCH_ASSOC);
                             if (!$user_db) {
+                                // Insert user baru
                                 $insert_stmt = $conn->prepare("INSERT INTO users (uid, name, role) VALUES (?, ?, ?)");
                                 $insert_stmt->execute([$uid, $user_name, $role]);
                                 $user_id_db = $conn->lastInsertId();
                                 $synced_count++;
                             } else {
                                 $user_id_db = $user_db['id'];
+                                // Jika nama/role tidak cocok, update agar konsisten
+                                if ($user_db['name'] !== $user_name || $user_db['role'] !== $role) {
+                                    $update_stmt = $conn->prepare("UPDATE users SET name = ?, role = ? WHERE id = ?");
+                                    $update_stmt->execute([$user_name, $role, $user_id_db]);
+                                }
                             }
+                            // Mapping ke guru/siswa
                             if ($role === 'siswa') {
                                 $siswa_stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
                                 $siswa_stmt->execute([$uid]);
@@ -114,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 if ($siswa) {
                                     $update_stmt = $conn->prepare("UPDATE siswa SET user_id = ? WHERE id_siswa = ? AND (user_id IS NULL OR user_id != ?)");
                                     $update_stmt->execute([$user_id_db, $siswa['id_siswa'], $user_id_db]);
+                                } else {
+                                    $warning_msgs[] = "UID $uid (Siswa) belum di-mapping ke data siswa manapun.";
                                 }
                             } elseif ($role === 'guru') {
                                 $guru_stmt = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
@@ -122,10 +132,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 if ($guru) {
                                     $update_stmt = $conn->prepare("UPDATE guru SET user_id = ? WHERE id_guru = ? AND (user_id IS NULL OR user_id != ?)");
                                     $update_stmt->execute([$user_id_db, $guru['id_guru'], $user_id_db]);
+                                } else {
+                                    $warning_msgs[] = "UID $uid (Guru) belum di-mapping ke data guru manapun.";
                                 }
                             }
                         }
                         $message = "Sinkronisasi selesai. $synced_count pengguna baru ditambahkan.";
+                        if (!empty($warning_msgs)) {
+                            $message .= '<br><b>Warning:</b><br>' . implode('<br>', $warning_msgs);
+                        }
                         $alert_class = 'alert-success';
                     } else {
                         $message = "Gagal terhubung ke perangkat fingerprint";

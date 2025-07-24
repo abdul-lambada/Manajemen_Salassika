@@ -59,10 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Validasi UID unik di users
-        $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ? AND id != ?");
-        $check_uid->execute([$uid, $siswa['user_id']]);
-        if ($check_uid->rowCount() > 0) {
-            throw new Exception("UID sudah digunakan user lain");
+        if ($uid !== $siswa['user_uid']) {
+            $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ? AND id != ?");
+            $check_uid->execute([$uid, $siswa['user_id']]);
+            if ($check_uid->rowCount() > 0) {
+                throw new Exception("UID sudah digunakan user lain");
+            }
         }
 
         // Update data siswa
