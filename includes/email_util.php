@@ -26,4 +26,11 @@ function sendAbsensiNotification($to, $subject, $body) {
         error_log('Email gagal: ' . $mail->ErrorInfo);
         return false;
     }
+}
+
+function sendDeviceOfflineNotification($device, $error) {
+    $admin_email = 'admin@yourdomain.com'; // Ganti dengan email admin
+    $subject = "Peringatan: Device Fingerprint Offline";
+    $body = "<p>Device fingerprint <b>{$device['nama_lokasi']}</b> (IP: {$device['ip']}:{$device['port']}) <b>OFFLINE</b> pada ".date('d-m-Y H:i').".<br>Error: $error</p>";
+    return sendAbsensiNotification($admin_email, $subject, $body);
 } 

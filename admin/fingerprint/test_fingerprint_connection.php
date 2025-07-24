@@ -11,9 +11,13 @@ $active_page = 'test_fingerprint';
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 include '../../includes/fingerprint_config.php';
+include '../../includes/db.php';
+// Ambil daftar device fingerprint aktif
+$device_stmt = $conn->query("SELECT * FROM fingerprint_devices WHERE is_active = 1 ORDER BY nama_lokasi, ip");
+$device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
+$device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : (count($device_list) ? $device_list[0]['ip'] : FINGERPRINT_IP);
 
 $test_results = [];
-$device_ip = isset($_POST['device_ip']) ? $_POST['device_ip'] : FINGERPRINT_IP;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_connection'])) {
     try {
@@ -107,8 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_connection'])) {
                         <div class="card-body">
                             <form method="POST" action="">
                                 <div class="form-group">
-                                    <label for="device_ip">IP Address Perangkat:</label>
-                                    <input type="text" class="form-control" id="device_ip" name="device_ip" value="<?php echo htmlspecialchars($device_ip); ?>" required>
+                                    <label for="device_ip">Device Fingerprint:</label>
+                                    <select class="form-control" id="device_ip" name="device_ip" required>
+                                        <?php foreach ($device_list as $dev): ?>
+                                            <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if ($device_ip == $dev['ip']) echo 'selected'; ?>>
+                                                <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <button type="submit" name="test_connection" class="btn btn-primary">
                                     <i class="fas fa-plug"></i> Test Koneksi

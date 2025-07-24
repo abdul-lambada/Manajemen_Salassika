@@ -152,6 +152,11 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-fingerprint"></i><span>Fingerprint</span>
             </a>
         </li>
+        <li class="nav-item <?php echo (strpos($script, 'manage_devices') !== false) ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/admin/fingerprint/manage_devices.php">
+                <i class="fas fa-server"></i><span>Manajemen Device</span>
+            </a>
+        </li>
         <li class="nav-item <?php echo ($active_page === 'realtime') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/admin/realtime/dashboard_realtime.php">
                 <i class="fas fa-broadcast-tower"></i><span>Realtime</span>

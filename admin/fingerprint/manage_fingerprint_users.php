@@ -5,7 +5,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit;
 }
 $title = "Kelola Pengguna Fingerprint";
-$active_page = 'manage_fingerprint_users';
+$active_page = 'manage_devices';
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 require '../../includes/zklib/zklibrary.php';
@@ -180,6 +180,9 @@ $uid_used = array_unique($uid_used);
 $all_uid_stmt = $conn->query("SELECT uid FROM users ORDER BY uid");
 $all_uid = $all_uid_stmt->fetchAll(PDO::FETCH_COLUMN);
 $uid_available = array_diff($all_uid, $uid_used);
+// Ambil daftar device fingerprint aktif
+$device_stmt = $conn->query("SELECT * FROM fingerprint_devices WHERE is_active = 1 ORDER BY nama_lokasi, ip");
+$device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
@@ -205,8 +208,14 @@ $uid_available = array_diff($all_uid, $uid_used);
                             <form method="POST" action="">
                                 <input type="hidden" name="action" value="add_user">
                                 <div class="form-group">
-                                    <label for="device_ip">IP Address Perangkat:</label>
-                                    <input type="text" class="form-control" id="device_ip" name="device_ip" value="<?php echo FINGERPRINT_IP; ?>" required>
+                                    <label for="device_ip">Device Fingerprint:</label>
+                                    <select class="form-control" id="device_ip" name="device_ip" required>
+                                        <?php foreach ($device_list as $dev): ?>
+                                            <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
+                                                <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="user_type">Tipe Pengguna:</label>
@@ -255,8 +264,14 @@ $uid_available = array_diff($all_uid, $uid_used);
                             <form method="POST" action="">
                                 <input type="hidden" name="action" value="sync_users">
                                 <div class="form-group">
-                                    <label for="sync_device_ip">IP Address Perangkat:</label>
-                                    <input type="text" class="form-control" id="sync_device_ip" name="device_ip" value="<?php echo FINGERPRINT_IP; ?>" required>
+                                    <label for="sync_device_ip">Device Fingerprint:</label>
+                                    <select class="form-control" id="sync_device_ip" name="device_ip" required>
+                                        <?php foreach ($device_list as $dev): ?>
+                                            <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
+                                                <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <button type="submit" class="btn btn-success">Sinkronisasi Pengguna</button>
                             </form>
