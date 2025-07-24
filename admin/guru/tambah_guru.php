@@ -34,7 +34,6 @@ $alert_class = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn->beginTransaction();
-        // Ambil data dari form
         $nama_guru = $_POST['nama_guru'];
         $nip = $_POST['nip'];
         $uid = $_POST['uid'];
@@ -48,16 +47,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($check_nip->rowCount() > 0) {
             throw new Exception("NIP sudah digunakan");
         }
-        // Validasi UID unik di users
+        // Cek apakah UID sudah ada di users
         $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
         $check_uid->execute(array($uid));
-        if ($check_uid->rowCount() > 0) {
-            throw new Exception("UID sudah digunakan user lain");
+        $user_id = null;
+        if ($row_uid = $check_uid->fetch(PDO::FETCH_ASSOC)) {
+            // UID sudah ada, update data user jika perlu
+            $user_id = $row_uid['id'];
+            $update_user = $conn->prepare("UPDATE users SET name = ?, password = ?, role = 'guru' WHERE id = ?");
+            $update_user->execute(array($nama_guru, $password, $user_id));
+        } else {
+            // UID belum ada, buat user baru
+            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
+            $stmt_user->execute(array($nama_guru, $password, $uid));
+            $user_id = $conn->lastInsertId();
         }
-        // Insert ke tabel users
-        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
-        $stmt_user->execute(array($nama_guru, $password, $uid));
-        $user_id = $conn->lastInsertId();
+        // Cek apakah user_id sudah termapping ke guru lain
+        $check_map = $conn->prepare("SELECT id_guru FROM guru WHERE user_id = ?");
+        $check_map->execute([$user_id]);
+        if ($check_map->rowCount() > 0) {
+            throw new Exception("UID sudah digunakan guru lain");
+        }
         // Simpan data ke tabel guru dengan user_id
         $stmt = $conn->prepare("INSERT INTO guru (nip, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute(array($nip, $jenis_kelamin, $tanggal_lahir, $alamat, $user_id));

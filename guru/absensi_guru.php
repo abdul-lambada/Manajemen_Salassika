@@ -14,7 +14,7 @@ $message = ''; // Variabel untuk menyimpan pesan sukses
 
 try {
     // Ambil daftar guru
-    $stmt_guru = $conn->prepare("SELECT * FROM Guru ORDER BY nama_guru");
+    $stmt_guru = $conn->prepare("SELECT * FROM guru ORDER BY nama_guru");
     $stmt_guru->execute();
     $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
 
@@ -88,7 +88,7 @@ try {
             kh.status AS status_fingerprint,
             ag.status_kehadiran AS status_manual,
             ag.catatan AS catatan_manual
-        FROM Guru g
+        FROM guru g
         LEFT JOIN users u ON g.user_id = u.id
         LEFT JOIN tbl_kehadiran kh ON u.id = kh.user_id AND DATE(kh.timestamp) = CURDATE()
         LEFT JOIN absensi_guru ag ON g.id_guru = ag.id_guru AND ag.tanggal = CURDATE()
@@ -141,7 +141,7 @@ try {
             kh.verification_mode AS mode_verifikasi,
             kh.status AS status_verifikasi
         FROM absensi_guru ag
-        JOIN Guru g ON ag.id_guru = g.id_guru
+        JOIN guru g ON ag.id_guru = g.id_guru
         LEFT JOIN users u ON g.user_id = u.id
         LEFT JOIN tbl_kehadiran kh ON u.id = kh.user_id AND DATE(kh.timestamp) = ag.tanggal
         ORDER BY ag.tanggal DESC, g.nama_guru

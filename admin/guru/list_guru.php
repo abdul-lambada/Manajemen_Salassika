@@ -81,8 +81,8 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
             if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIP $nip sudah ada"; continue; }
             // Insert ke users
             $password = password_hash('123456', PASSWORD_DEFAULT);
-            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
-            $stmt_user->execute([$row['nama guru'], $password, $nip]);
+            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', NULL)");
+            $stmt_user->execute([$row['nama guru'], $password]);
             $user_id = $conn->lastInsertId();
             // Insert ke guru
             $stmt_guru = $conn->prepare("INSERT INTO guru (nama_guru, nip, jenis_kelamin, tanggal_lahir, alamat, user_id) VALUES (?, ?, ?, ?, ?, ?)");
@@ -147,7 +147,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
                                         <?php foreach ($guru_list as $index => $guru): ?>
                                             <tr>
                                                 <td><?php echo ($page - 1) * $limit + $index + 1; ?></td>
-                                                <td><?php echo htmlspecialchars($guru['nama_guru']); ?></td>
+                                                <td><?php echo htmlspecialchars($guru['nama_guru'] ?: $guru['user_name']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['nip']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['jenis_kelamin']); ?></td>
                                                 <td><?php echo htmlspecialchars($guru['tanggal_lahir']); ?></td>

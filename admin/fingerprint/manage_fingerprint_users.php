@@ -154,6 +154,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Tambahkan tombol sinkronisasi semua device di atas form sinkronisasi
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_all_devices'])) {
+    $all_devices_stmt = $conn->query("SELECT * FROM fingerprint_devices WHERE is_active = 1 ORDER BY nama_lokasi, ip");
+    $all_devices = $all_devices_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total_synced = 0;
+    $all_warnings = [];
+    foreach ($all_devices as $dev) {
+        $device_ip = $dev['ip'];
+        try {
+            $zk = new ZKLibrary($device_ip, 4370);
+            if ($zk->connect()) {
+                $zk->disableDevice();
+                $fingerprint_users = $zk->getUser();
+                $zk->enableDevice();
+                $zk->disconnect();
+                $synced_count = 0;
+                $warning_msgs = [];
+                foreach ($fingerprint_users as $uid => $user) {
+                    $user_id = $user[0];
+                    $user_name = $user[1];
+                    $privilege = isset($user[2]) ? $user[2] : 0;
+                    if ($privilege == 0) {
+                        $role = 'guru';
+                    } elseif ($privilege == 2) {
+                        $role = 'siswa';
+                    } elseif ($privilege == 14 || $privilege == 15) {
+                        continue;
+                    } else {
+                        $role = 'siswa';
+                    }
+                    $check_stmt = $conn->prepare("SELECT id, name, role FROM users WHERE uid = ?");
+                    $check_stmt->execute([$uid]);
+                    $user_db = $check_stmt->fetch(PDO::FETCH_ASSOC);
+                    if (!$user_db) {
+                        // Insert user baru
+                        $insert_stmt = $conn->prepare("INSERT INTO users (uid, name, role) VALUES (?, ?, ?)");
+                        $insert_stmt->execute([$uid, $user_name, $role]);
+                        $user_id_db = $conn->lastInsertId();
+                        $synced_count++;
+                    } else {
+                        $user_id_db = $user_db['id'];
+                        // Jika nama/role tidak cocok, update agar konsisten
+                        if ($user_db['name'] !== $user_name || $user_db['role'] !== $role) {
+                            $update_stmt = $conn->prepare("UPDATE users SET name = ?, role = ? WHERE id = ?");
+                            $update_stmt->execute([$user_name, $role, $user_id_db]);
+                        }
+                    }
+                    // Mapping ke guru/siswa
+                    if ($role === 'siswa') {
+                        $siswa_stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
+                        $siswa_stmt->execute([$uid]);
+                        $siswa = $siswa_stmt->fetch(PDO::FETCH_ASSOC);
+                        if ($siswa) {
+                            $update_stmt = $conn->prepare("UPDATE siswa SET user_id = ? WHERE id_siswa = ? AND (user_id IS NULL OR user_id != ?)");
+                            $update_stmt->execute([$user_id_db, $siswa['id_siswa'], $user_id_db]);
+                        } else {
+                            $warning_msgs[] = "UID $uid (Siswa) belum di-mapping ke data siswa manapun.";
+                        }
+                    } elseif ($role === 'guru') {
+                        $guru_stmt = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
+                        $guru_stmt->execute([$uid]);
+                        $guru = $guru_stmt->fetch(PDO::FETCH_ASSOC);
+                        if ($guru) {
+                            $update_stmt = $conn->prepare("UPDATE guru SET user_id = ? WHERE id_guru = ? AND (user_id IS NULL OR user_id != ?)");
+                            $update_stmt->execute([$user_id_db, $guru['id_guru'], $user_id_db]);
+                        } else {
+                            $warning_msgs[] = "UID $uid (Guru) belum di-mapping ke data guru manapun.";
+                        }
+                    }
+                }
+                $total_synced += $synced_count;
+                if (!empty($warning_msgs)) {
+                    $all_warnings = array_merge($all_warnings, $warning_msgs);
+                }
+            } else {
+                $all_warnings[] = "Gagal terhubung ke device fingerprint di IP $device_ip.";
+            }
+        } catch (Exception $e) {
+            $all_warnings[] = "Error device $device_ip: " . $e->getMessage();
+        }
+    }
+    $message = "Sinkronisasi semua device selesai. $total_synced pengguna baru ditambahkan.";
+    if (!empty($all_warnings)) {
+        $message .= '<br><b>Warning:</b><br>' . implode('<br>', $all_warnings);
+    }
+    $alert_class = 'alert-success';
+}
 // Handle map/unmap POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'map_guru' && !empty($_POST['id_guru']) && !empty($_POST['uid'])) {
@@ -186,7 +273,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Ambil data siswa dan guru untuk dropdown
 $stmt_siswa = $conn->query("SELECT s.id_siswa, s.nama_siswa, s.nis, s.nisn, u.uid FROM siswa s LEFT JOIN users u ON s.user_id = u.id WHERE s.user_id IS NOT NULL ORDER BY s.nama_siswa");
 $siswa_list = $stmt_siswa->fetchAll(PDO::FETCH_ASSOC);
-$stmt_guru = $conn->query("SELECT g.id_guru, g.nama_guru, g.nip, u.uid FROM guru g LEFT JOIN users u ON g.user_id = u.id WHERE g.user_id IS NOT NULL ORDER BY g.nama_guru");
+$stmt_guru = $conn->query("SELECT g.id_guru, g.nama_guru, g.nip, u.uid, u.name AS user_name FROM guru g LEFT JOIN users u ON g.user_id = u.id WHERE g.user_id IS NOT NULL ORDER BY g.nama_guru");
 $guru_list = $stmt_guru->fetchAll(PDO::FETCH_ASSOC);
 $uid_used = [];
 foreach ($siswa_list as $s) { if ($s['uid']) $uid_used[] = $s['uid']; }
@@ -212,6 +299,15 @@ $device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
                     </button>
                 </div>
             <?php endif; ?>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <form method="POST" action="">
+                        <button type="submit" name="sync_all_devices" class="btn btn-info">
+                            <i class="fas fa-sync-alt"></i> Sinkronisasi Semua Device
+                        </button>
+                    </form>
+                </div>
+            </div>
             <div class="row">
                 <!-- Form Tambah Pengguna -->
                 <div class="col-lg-6">
@@ -316,7 +412,7 @@ $device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <?php foreach ($guru_list as $i => $guru): ?>
                                             <tr>
                                                 <td><?= $i+1 ?></td>
-                                                <td><?= htmlspecialchars($guru['nama_guru']) ?></td>
+                                                <td><?php echo htmlspecialchars($guru['nama_guru'] ?: $guru['user_name']); ?></td>
                                                 <td><?= htmlspecialchars($guru['nip']) ?></td>
                                                 <td><?= $guru['uid'] ? htmlspecialchars($guru['uid']) : '-' ?></td>
                                                 <td>

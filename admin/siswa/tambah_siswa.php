@@ -33,8 +33,6 @@ $error_message = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $conn->beginTransaction();
-
-        // Ambil data form
         $nisn = $_POST['nisn'];
         $nama_siswa = $_POST['nama_siswa'];
         $uid = $_POST['uid'];
@@ -43,34 +41,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $alamat = $_POST['alamat'];
         $id_kelas = $_POST['id_kelas'];
         $nis = $_POST['nis'];
-
         // Validasi NISN unik
         $check_nisn = $conn->prepare("SELECT id_siswa FROM siswa WHERE nisn = ?");
         $check_nisn->execute(array($nisn));
         if ($check_nisn->rowCount() > 0) {
             throw new Exception("NISN sudah digunakan");
         }
-
         // Validasi NIS unik
         $check_nis = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
         $check_nis->execute(array($nis));
         if ($check_nis->rowCount() > 0) {
             throw new Exception("NIS sudah digunakan");
         }
-
-        // Validasi UID unik di users
+        // Cek apakah UID sudah ada di users
         $check_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
         $check_uid->execute(array($uid));
-        if ($check_uid->rowCount() > 0) {
-            throw new Exception("UID sudah digunakan user lain");
+        $user_id = null;
+        $password = password_hash('123456', PASSWORD_DEFAULT);
+        if ($row_uid = $check_uid->fetch(PDO::FETCH_ASSOC)) {
+            // UID sudah ada, update data user jika perlu
+            $user_id = $row_uid['id'];
+            $update_user = $conn->prepare("UPDATE users SET name = ?, password = ?, role = 'pendaftar' WHERE id = ?");
+            $update_user->execute(array($nama_siswa, $password, $user_id));
+        } else {
+            // UID belum ada, buat user baru dengan role pendaftar
+            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'pendaftar', ?)");
+            $stmt_user->execute(array($nama_siswa, $password, $uid));
+            $user_id = $conn->lastInsertId();
         }
-
-        // Insert ke tabel users
-        $password = password_hash('123456', PASSWORD_DEFAULT); // Password default
-        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', ?)");
-        $stmt_user->execute(array($nama_siswa, $password, $uid));
-        $user_id = $conn->lastInsertId();
-
+        // Cek apakah user_id sudah termapping ke siswa lain
+        $check_map = $conn->prepare("SELECT id_siswa FROM siswa WHERE user_id = ?");
+        $check_map->execute([$user_id]);
+        if ($check_map->rowCount() > 0) {
+            throw new Exception("UID sudah digunakan siswa lain");
+        }
         // Insert ke tabel siswa
         $stmt = $conn->prepare("
             INSERT INTO siswa 
@@ -87,11 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $nis,
             $user_id
         ));
-
         $conn->commit();
         header("Location: list_siswa.php?status=add_success");
         exit();
-        
     } catch (Exception $e) {
         $conn->rollBack();
         $error_message = $e->getMessage();
@@ -131,9 +133,10 @@ include '../../templates/sidebar.php';
                                 <?php if (!empty($fingerprint_users)): ?>
                                     <?php foreach ($fingerprint_users as $user): ?>
                                         <?php
-                                            // Filter hanya role/hak 'pendaftar' (case-insensitive)
-                                            $role = isset($user[2]) ? strtolower($user[2]) : 'pendaftar';
-                                            if ($role !== 'pendaftar') continue;
+                                            // Filter hanya role/hak 'pendaftar' (string case-insensitive) atau kode role fingerprint X100-C (misal: 2, 14, 15)
+                                            $role = isset($user[2]) ? strtolower($user[2]) : '';
+                                            $role_int = isset($user[2]) ? intval($user[2]) : -1;
+                                            if ($role !== 'pendaftar' && $role_int !== 2 && $role_int !== 14 && $role_int !== 15) continue;
                                         ?>
                                         <option value="<?= htmlspecialchars($user[0]) ?>" data-name="<?= htmlspecialchars($user[1]) ?>" data-role="<?= htmlspecialchars($role) ?>">
                                             <?= htmlspecialchars($user[0]) ?> - <?= htmlspecialchars($user[1]) ?>
@@ -142,9 +145,13 @@ include '../../templates/sidebar.php';
                                 <?php endif; ?>
                             </select>
                             <small class="form-text text-muted">
-                                Pilih UID dari device fingerprint untuk auto-fill data. 
-                                Jika device tidak tersedia, input manual di bawah.
+                                Pilih UID dari device fingerprint untuk auto-fill data. Jika device tidak tersedia, input manual di bawah.
                             </small>
+                            <?php if (empty($fingerprint_users)): ?>
+                                <div class="alert alert-warning mt-2 mb-0 p-2" role="alert">
+                                    Device fingerprint tidak terhubung atau tidak ada data. Silakan input data siswa secara manual.
+                                </div>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="form-group">

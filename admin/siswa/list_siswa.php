@@ -32,7 +32,8 @@ $stmt = $conn->prepare("
         s.tanggal_lahir, 
         s.alamat, 
         k.nama_kelas, 
-        u.name AS user_name
+        u.name AS user_name,
+        u.uid AS user_uid
     FROM siswa s
     JOIN kelas k ON s.id_kelas = k.id_kelas
     LEFT JOIN users u ON s.user_id = u.id
@@ -91,8 +92,8 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
         if ($stmt_uid->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah digunakan user lain"; continue; }
         // Insert ke users
         $password = password_hash('123456', PASSWORD_DEFAULT);
-        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', ?)");
-        $stmt_user->execute([$row['nama siswa'], $password, $nis]);
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', NULL)");
+        $stmt_user->execute([$row['nama siswa'], $password]);
         $user_id = $conn->lastInsertId();
         // Ambil tanggal lahir dengan fallback
         $tanggal_lahir = '';
