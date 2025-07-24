@@ -80,16 +80,29 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
     for ($i = 1; $i < count($rows); $i++) {
         $row = array_combine($header, $rows[$i]);
         if (empty($row['nis']) || empty($row['nama siswa'])) continue;
-        // Validasi NIS unik
+        // Validasi NIS unik di siswa
         $nis = $row['nis'];
         $stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
         $stmt->execute([$nis]);
-        if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah ada"; continue; }
+        if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah ada di siswa"; continue; }
+        // Validasi UID unik di users
+        $stmt_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $stmt_uid->execute([$nis]);
+        if ($stmt_uid->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah digunakan user lain"; continue; }
         // Insert ke users
         $password = password_hash('123456', PASSWORD_DEFAULT);
         $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', ?)");
         $stmt_user->execute([$row['nama siswa'], $password, $nis]);
         $user_id = $conn->lastInsertId();
+        // Ambil tanggal lahir dengan fallback
+        $tanggal_lahir = '';
+        if (isset($row['tanggal lahir']) && !empty($row['tanggal lahir'])) {
+            $tanggal_lahir = $row['tanggal lahir'];
+        } elseif (isset($row['tanggal_lahir']) && !empty($row['tanggal_lahir'])) {
+            $tanggal_lahir = $row['tanggal_lahir'];
+        } else {
+            $tanggal_lahir = '2000-01-01'; // default jika kosong
+        }
         // Insert ke siswa
         $stmt_siswa = $conn->prepare("INSERT INTO siswa (nama_siswa, nis, nisn, jenis_kelamin, tanggal_lahir, alamat, user_id, id_kelas) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt_siswa->execute([
@@ -97,7 +110,7 @@ if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
             $nis,
             isset($row['nisn']) ? $row['nisn'] : '',
             isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
-            isset($row['tanggal lahir']) ? $row['tanggal_lahir'] : '',
+            $tanggal_lahir,
             isset($row['alamat']) ? $row['alamat'] : '',
             $user_id,
             isset($row['id_kelas']) ? $row['id_kelas'] : null

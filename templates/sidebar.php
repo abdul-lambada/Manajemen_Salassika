@@ -41,6 +41,8 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
     $active_page = 'export_pdf';
 } elseif (preg_match('#/admin/pengaduan/#', $script)) {
     $active_page = 'pengaduan';
+} elseif (preg_match('#/admin/fingerprint/manage_devices\.php$#', $script)) {
+    $active_page = 'manage_devices';
 } elseif (preg_match('#/admin/fingerprint/#', $script)) {
     $active_page = 'fingerprint';
 } elseif (preg_match('#/admin/realtime/#', $script)) {
@@ -152,7 +154,7 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-fingerprint"></i><span>Fingerprint</span>
             </a>
         </li>
-        <li class="nav-item <?php echo (strpos($script, 'manage_devices') !== false) ? 'active' : ''; ?>">
+        <li class="nav-item <?php echo ($active_page === 'manage_devices') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/admin/fingerprint/manage_devices.php">
                 <i class="fas fa-server"></i><span>Manajemen Device</span>
             </a>

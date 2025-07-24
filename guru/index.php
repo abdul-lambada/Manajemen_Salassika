@@ -54,6 +54,25 @@ if ($role === 'admin') {
         $status = $row['status_kehadiran'];
         if (isset($stats[$status])) $stats[$status] += $row['total'];
     }
+    // Inisialisasi variabel agar tidak undefined
+    $absensi_today = array_sum($stats);
+    // Ambil kelas dan total siswa (tanpa filter id_guru karena kolom tidak ada)
+    $nama_kelas = '';
+    $siswa_count = 0;
+    $stmt_kelas = $conn->query("SELECT k.nama_kelas, COUNT(s.id_siswa) as total_siswa FROM kelas k JOIN siswa s ON s.id_kelas = k.id_kelas GROUP BY k.id_kelas ORDER BY total_siswa DESC LIMIT 1");
+    if ($row_kelas = $stmt_kelas->fetch(PDO::FETCH_ASSOC)) {
+        $nama_kelas = $row_kelas['nama_kelas'];
+        $siswa_count = $row_kelas['total_siswa'];
+    }
+    // Status kehadiran hari ini (ambil status absensi_guru hari ini)
+    $status_kehadiran = '-';
+    $stmt_status = $conn->prepare("SELECT status_kehadiran FROM absensi_guru WHERE tanggal = :today AND id_guru = :id_guru LIMIT 1");
+    $stmt_status->execute([':today' => $today, ':id_guru' => $id_guru]);
+    if ($row_status = $stmt_status->fetch(PDO::FETCH_ASSOC)) {
+        $status_kehadiran = $row_status['status_kehadiran'];
+    }
+    // Menu tersedia (hitung menu sidebar untuk guru)
+    $menu_tersedia = 7;
 }
 ?>
 
