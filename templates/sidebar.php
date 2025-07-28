@@ -89,24 +89,21 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
 
     <hr class="sidebar-divider my-0">
 
-    <!-- Dashboard -->
-    <li class="nav-item <?php echo ($active_page === 'dashboard') ? 'active' : ''; ?>">
-        <a class="nav-link" href="<?php echo ($role === 'admin') ? '/absensi_sekolah/admin/index.php' : '/absensi_sekolah/guru/index.php'; ?>">
-            <i class="fas fa-fw fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
-
-    <hr class="sidebar-divider">
-
     <?php if ($role === 'admin'): ?>
+        <li class="nav-item <?php echo ($active_page === 'dashboard') ? 'active' : ''; ?>">
+            <a class="nav-link" href="/absensi_sekolah/admin/index.php">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <hr class="sidebar-divider">
         <div class="sidebar-heading">Manajemen Data</div>
         <?php
         $data_master_pages = array('guru','siswa','kelas','jurusan','users');
         $is_data_master_active = in_array($active_page, $data_master_pages);
         ?>
         <li class="nav-item <?php echo $is_data_master_active ? 'active' : ''; ?>">
-            <a class="nav-link collapsed" href="javascript:void(0);" data-toggle="collapse" data-target="#collapseDataMaster"
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseDataMaster"
                aria-expanded="<?php echo $is_data_master_active ? 'true' : 'false'; ?>" aria-controls="collapseDataMaster">
                 <i class="fas fa-database"></i>
                 <span>Data Master</span>
@@ -121,7 +118,6 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 </div>
             </div>
         </li>
-
         <hr class="sidebar-divider">
         <div class="sidebar-heading">Fitur</div>
 
@@ -130,7 +126,7 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
         $is_laporan_active = in_array($active_page, $laporan_pages);
         ?>
         <li class="nav-item <?php echo $is_laporan_active ? 'active' : ''; ?>">
-            <a class="nav-link collapsed" href="javascript:void(0);" data-toggle="collapse" data-target="#collapseLaporan"
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLaporan"
                aria-expanded="<?php echo $is_laporan_active ? 'true' : 'false'; ?>" aria-controls="collapseLaporan">
                 <i class="fas fa-file-alt"></i>
                 <span>Laporan</span>
@@ -140,6 +136,8 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                     <a class="collapse-item <?php echo ($active_page === 'laporan_absensi') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_absensi.php">Laporan Absensi</a>
                     <a class="collapse-item <?php echo ($active_page === 'laporan_siswa') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_siswa.php">Laporan Siswa</a>
                     <a class="collapse-item <?php echo ($active_page === 'laporan_guru') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/laporan/laporan_guru.php">Laporan Guru</a>
+                    <a class="collapse-item" href="/absensi_sekolah/admin/laporan/export_excel.php">Export Excel</a>
+                    <a class="collapse-item" href="/absensi_sekolah/admin/laporan/export_pdf.php">Export PDF</a>
                 </div>
             </div>
         </li>
@@ -149,10 +147,27 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
                 <i class="fas fa-comments"></i><span>Pengaduan</span>
             </a>
         </li>
-        <li class="nav-item <?php echo ($active_page === 'fingerprint') ? 'active' : ''; ?>">
-            <a class="nav-link" href="/absensi_sekolah/admin/fingerprint/manage_fingerprint_users.php">
-                <i class="fas fa-fingerprint"></i><span>Fingerprint</span>
+        <div class="sidebar-heading">Fingerprint</div>
+        <?php
+        $fingerprint_pages = array('fingerprint', 'manage_devices');
+        $is_fingerprint_active = in_array($active_page, $fingerprint_pages) || strpos($script, '/admin/fingerprint/') !== false;
+        $tab = isset($_GET['tab']) ? $_GET['tab'] : '';
+        ?>
+        <li class="nav-item <?php echo $is_fingerprint_active ? 'active' : ''; ?>">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseFingerprint"
+               aria-expanded="<?php echo $is_fingerprint_active ? 'true' : 'false'; ?>" aria-controls="collapseFingerprint">
+                <i class="fas fa-fingerprint"></i>
+                <span>Fingerprint</span>
             </a>
+            <div id="collapseFingerprint" class="collapse <?php echo $is_fingerprint_active ? 'show' : ''; ?>" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item <?php echo ($tab === '' || $tab === 'kelola') && strpos($script, 'view_logs.php') === false && strpos($script, 'test_fingerprint_connection.php') === false ? 'active' : ''; ?>" href="/absensi_sekolah/admin/fingerprint/manage_fingerprint_users.php">Kelola User Fingerprint</a>
+                    <a class="collapse-item <?php echo ($tab === 'mapping') && strpos($script, 'view_logs.php') === false && strpos($script, 'test_fingerprint_connection.php') === false ? 'active' : ''; ?>" href="/absensi_sekolah/admin/fingerprint/manage_fingerprint_users.php?tab=mapping">Mapping UID</a>
+                    <a class="collapse-item <?php echo ($tab === 'sinkronisasi') && strpos($script, 'view_logs.php') === false && strpos($script, 'test_fingerprint_connection.php') === false ? 'active' : ''; ?>" href="/absensi_sekolah/admin/fingerprint/manage_fingerprint_users.php?tab=sinkronisasi">Sinkronisasi User</a>
+                    <a class="collapse-item <?php echo (strpos($script, 'view_logs.php') !== false) ? 'active' : ''; ?>" href="/absensi_sekolah/admin/fingerprint/view_logs.php">Log Fingerprint</a>
+                    <a class="collapse-item <?php echo (strpos($script, 'test_fingerprint_connection.php') !== false) ? 'active' : ''; ?>" href="/absensi_sekolah/admin/fingerprint/test_fingerprint_connection.php">Test Koneksi Device</a>
+                </div>
+            </div>
         </li>
         <li class="nav-item <?php echo ($active_page === 'manage_devices') ? 'active' : ''; ?>">
             <a class="nav-link" href="/absensi_sekolah/admin/fingerprint/manage_devices.php">

@@ -285,12 +285,12 @@ $uid_available = array_diff($all_uid, $uid_used);
 // Ambil daftar device fingerprint aktif
 $device_stmt = $conn->query("SELECT * FROM fingerprint_devices WHERE is_active = 1 ORDER BY nama_lokasi, ip");
 $device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
+$tab = isset($_GET['tab']) ? $_GET['tab'] : 'kelola';
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
         <?php include '../../templates/navbar.php'; ?>
         <div class="container-fluid">
-            <!-- <h1 class="h3 mb-4 text-gray-800">Kelola Pengguna Fingerprint</h1> -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo $alert_class; ?> alert-dismissible fade show" role="alert">
                     <?php echo $message; ?>
@@ -299,194 +299,231 @@ $device_list = $device_stmt->fetchAll(PDO::FETCH_ASSOC);
                     </button>
                 </div>
             <?php endif; ?>
-            <div class="row mb-3">
-                <div class="col-12">
-                    <form method="POST" action="">
-                        <button type="submit" name="sync_all_devices" class="btn btn-info">
-                            <i class="fas fa-sync-alt"></i> Sinkronisasi Semua Device
-                        </button>
-                    </form>
-                </div>
-            </div>
-            <div class="row">
-                <!-- Form Tambah Pengguna -->
-                <div class="col-lg-6">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Tambah Pengguna Fingerprint</h6>
-                        </div>
-                        <div class="card-body">
-                            <form method="POST" action="">
-                                <input type="hidden" name="action" value="add_user">
-                                <div class="form-group">
-                                    <label for="device_ip">Device Fingerprint:</label>
-                                    <select class="form-control" id="device_ip" name="device_ip" required>
-                                        <?php foreach ($device_list as $dev): ?>
-                                            <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
-                                                <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="user_type">Tipe Pengguna:</label>
-                                    <select class="form-control" id="user_type" name="user_type" required>
-                                        <option value="">Pilih Tipe</option>
-                                        <option value="siswa">Siswa</option>
-                                        <option value="guru">Guru</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" id="siswa_select" style="display: none;">
-                                    <label for="siswa_id">Pilih Siswa:</label>
-                                    <select class="form-control" id="siswa_id" name="siswa_id">
-                                        <option value="">Pilih Siswa</option>
-                                        <?php foreach ($siswa_list as $siswa): ?>
-                                            <option value="<?php echo $siswa['id_siswa']; ?>" data-uid="<?php echo $siswa['uid']; ?>" data-nama="<?php echo $siswa['nama_siswa']; ?>">
-                                                <?php echo $siswa['nama_siswa']; ?> (NIS: <?php echo $siswa['nis']; ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group" id="guru_select" style="display: none;">
-                                    <label for="guru_id">Pilih Guru:</label>
-                                    <select class="form-control" id="guru_id" name="guru_id">
-                                        <option value="">Pilih Guru</option>
-                                        <?php foreach ($guru_list as $guru): ?>
-                                            <option value="<?php echo $guru['id_guru']; ?>" data-uid="<?php echo $guru['uid']; ?>" data-nama="<?php echo $guru['nama_guru']; ?>">
-                                                <?php echo $guru['nama_guru']; ?> (NIP: <?php echo $guru['nip']; ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <input type="hidden" id="user_id" name="user_id">
-                                <input type="hidden" id="user_name" name="user_name">
-                                <button type="submit" class="btn btn-primary">Tambah Pengguna</button>
-                            </form>
-                        </div>
+            <?php if ($tab === 'sinkronisasi'): ?>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <form method="POST" action="">
+                            <button type="submit" name="sync_all_devices" class="btn btn-info">
+                                <i class="fas fa-sync-alt"></i> Sinkronisasi Semua Device
+                            </button>
+                        </form>
                     </div>
                 </div>
-                <!-- Sinkronisasi Pengguna -->
-                <div class="col-lg-6">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Sinkronisasi Pengguna</h6>
-                        </div>
-                        <div class="card-body">
-                            <form method="POST" action="">
-                                <input type="hidden" name="action" value="sync_users">
-                                <div class="form-group">
-                                    <label for="sync_device_ip">Device Fingerprint:</label>
-                                    <select class="form-control" id="sync_device_ip" name="device_ip" required>
-                                        <?php foreach ($device_list as $dev): ?>
-                                            <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
-                                                <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-success">Sinkronisasi Pengguna</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Tabel Pengguna -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <ul class="nav nav-tabs mb-3" id="fingerprintTab" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="guru-tab" data-toggle="tab" href="#guru" role="tab">Daftar Guru</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="siswa-tab" data-toggle="tab" href="#siswa" role="tab">Daftar Siswa</a>
-                        </li>
-                    </ul>
-                    <div class="tab-content" id="fingerprintTabContent">
-                        <div class="tab-pane fade show active" id="guru" role="tabpanel">
-                            <div class="card mb-4">
-                                <div class="card-header">Guru</div>
-                                <div class="card-body table-responsive-sm">
-                                    <table class="table table-bordered">
-                                        <thead><tr><th>No</th><th>Nama Guru</th><th>NIP</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
-                                        <tbody>
-                                        <?php foreach ($guru_list as $i => $guru): ?>
-                                            <tr>
-                                                <td><?= $i+1 ?></td>
-                                                <td><?php echo htmlspecialchars($guru['nama_guru'] ?: $guru['user_name']); ?></td>
-                                                <td><?= htmlspecialchars($guru['nip']) ?></td>
-                                                <td><?= $guru['uid'] ? htmlspecialchars($guru['uid']) : '-' ?></td>
-                                                <td>
-                                                    <?php if ($guru['uid']): ?>
-                                                        <form method="POST" action="" style="display:inline;">
-                                                            <input type="hidden" name="action" value="unmap_guru">
-                                                            <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
-                                                            <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
-                                                        </form>
-                                                    <?php else: ?>
-                                                        <form method="POST" action="" style="display:inline;">
-                                                            <input type="hidden" name="action" value="map_guru">
-                                                            <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
-                                                            <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
-                                                                <option value="">Pilih UID</option>
-                                                                <?php foreach ($uid_available as $uid): ?>
-                                                                    <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
-                                                                <?php endforeach; ?>
-                                                            </select>
-                                                            <button type="submit" class="btn btn-primary btn-sm">Map</button>
-                                                        </form>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Sinkronisasi Pengguna</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="">
+                                    <input type="hidden" name="action" value="sync_users">
+                                    <div class="form-group">
+                                        <label for="sync_device_ip">Device Fingerprint:</label>
+                                        <select class="form-control" id="sync_device_ip" name="device_ip" required>
+                                            <?php foreach ($device_list as $dev): ?>
+                                                <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
+                                                    <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Sinkronisasi Pengguna</button>
+                                </form>
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="siswa" role="tabpanel">
-                            <div class="card mb-4">
-                                <div class="card-header">Siswa</div>
-                                <div class="card-body table-responsive-sm">
-                                    <table class="table table-bordered">
-                                        <thead><tr><th>No</th><th>Nama Siswa</th><th>NIS</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
-                                        <tbody>
-                                        <?php foreach ($siswa_list as $i => $siswa): ?>
-                                            <tr>
-                                                <td><?= $i+1 ?></td>
-                                                <td><?= htmlspecialchars($siswa['nama_siswa']) ?></td>
-                                                <td><?= htmlspecialchars($siswa['nis']) ?></td>
-                                                <td><?= $siswa['uid'] ? htmlspecialchars($siswa['uid']) : '-' ?></td>
-                                                <td>
-                                                    <?php if ($siswa['uid']): ?>
-                                                        <form method="POST" action="" style="display:inline;">
-                                                            <input type="hidden" name="action" value="unmap_siswa">
-                                                            <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
-                                                            <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
-                                                        </form>
-                                                    <?php else: ?>
-                                                        <form method="POST" action="" style="display:inline;">
-                                                            <input type="hidden" name="action" value="map_siswa">
-                                                            <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
-                                                            <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
-                                                                <option value="">Pilih UID</option>
-                                                                <?php foreach ($uid_available as $uid): ?>
-                                                                    <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
-                                                                <?php endforeach; ?>
-                                                            </select>
-                                                            <button type="submit" class="btn btn-primary btn-sm">Map</button>
-                                                        </form>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
+                    </div>
+                </div>
+            <?php elseif ($tab === 'mapping'): ?>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <ul class="nav nav-tabs mb-3" id="fingerprintTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="guru-tab" data-toggle="tab" href="#guru" role="tab">Daftar Guru</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="siswa-tab" data-toggle="tab" href="#siswa" role="tab">Daftar Siswa</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="fingerprintTabContent">
+                            <div class="tab-pane fade show active" id="guru" role="tabpanel">
+                                <div class="card mb-4">
+                                    <div class="card-header">Guru</div>
+                                    <div class="card-body table-responsive-sm">
+                                        <table class="table table-bordered">
+                                            <thead><tr><th>No</th><th>Nama Guru</th><th>NIP</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
+                                            <tbody>
+                                            <?php foreach ($guru_list as $i => $guru): ?>
+                                                <tr>
+                                                    <td><?= $i+1 ?></td>
+                                                    <td><?php echo htmlspecialchars($guru['nama_guru'] ?: $guru['user_name']); ?></td>
+                                                    <td><?= htmlspecialchars($guru['nip']) ?></td>
+                                                    <td><?= $guru['uid'] ? htmlspecialchars($guru['uid']) : '-' ?></td>
+                                                    <td>
+                                                        <?php if ($guru['uid']): ?>
+                                                            <form method="POST" action="" style="display:inline;">
+                                                                <input type="hidden" name="action" value="unmap_guru">
+                                                                <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
+                                                                <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
+                                                            </form>
+                                                        <?php else: ?>
+                                                            <form method="POST" action="" style="display:inline;">
+                                                                <input type="hidden" name="action" value="map_guru">
+                                                                <input type="hidden" name="id_guru" value="<?= $guru['id_guru'] ?>">
+                                                                <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
+                                                                    <option value="">Pilih UID</option>
+                                                                    <?php foreach ($uid_available as $uid): ?>
+                                                                        <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
+                                                                    <?php endforeach; ?>
+                                                                </select>
+                                                                <button type="submit" class="btn btn-primary btn-sm">Map</button>
+                                                            </form>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="siswa" role="tabpanel">
+                                <div class="card mb-4">
+                                    <div class="card-header">Siswa</div>
+                                    <div class="card-body table-responsive-sm">
+                                        <table class="table table-bordered">
+                                            <thead><tr><th>No</th><th>Nama Siswa</th><th>NIS</th><th>UID Fingerprint</th><th>Aksi</th></tr></thead>
+                                            <tbody>
+                                            <?php foreach ($siswa_list as $i => $siswa): ?>
+                                                <tr>
+                                                    <td><?= $i+1 ?></td>
+                                                    <td><?= htmlspecialchars($siswa['nama_siswa']) ?></td>
+                                                    <td><?= htmlspecialchars($siswa['nis']) ?></td>
+                                                    <td><?= $siswa['uid'] ? htmlspecialchars($siswa['uid']) : '-' ?></td>
+                                                    <td>
+                                                        <?php if ($siswa['uid']): ?>
+                                                            <form method="POST" action="" style="display:inline;">
+                                                                <input type="hidden" name="action" value="unmap_siswa">
+                                                                <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
+                                                                <button type="submit" class="btn btn-danger btn-sm">Unmap</button>
+                                                            </form>
+                                                        <?php else: ?>
+                                                            <form method="POST" action="" style="display:inline;">
+                                                                <input type="hidden" name="action" value="map_siswa">
+                                                                <input type="hidden" name="id_siswa" value="<?= $siswa['id_siswa'] ?>">
+                                                                <select name="uid" class="form-control form-control-sm d-inline" style="width:auto;display:inline-block;">
+                                                                    <option value="">Pilih UID</option>
+                                                                    <?php foreach ($uid_available as $uid): ?>
+                                                                        <option value="<?= htmlspecialchars($uid) ?>"><?= htmlspecialchars($uid) ?></option>
+                                                                    <?php endforeach; ?>
+                                                                </select>
+                                                                <button type="submit" class="btn btn-primary btn-sm">Map</button>
+                                                            </form>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php else: ?>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <form method="POST" action="">
+                            <button type="submit" name="sync_all_devices" class="btn btn-info">
+                                <i class="fas fa-sync-alt"></i> Sinkronisasi Semua Device
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="row">
+                    <!-- Form Tambah Pengguna -->
+                    <div class="col-lg-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Tambah Pengguna Fingerprint</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="">
+                                    <input type="hidden" name="action" value="add_user">
+                                    <div class="form-group">
+                                        <label for="device_ip">Device Fingerprint:</label>
+                                        <select class="form-control" id="device_ip" name="device_ip" required>
+                                            <?php foreach ($device_list as $dev): ?>
+                                                <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
+                                                    <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user_type">Tipe Pengguna:</label>
+                                        <select class="form-control" id="user_type" name="user_type" required>
+                                            <option value="">Pilih Tipe</option>
+                                            <option value="siswa">Siswa</option>
+                                            <option value="guru">Guru</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="siswa_select" style="display: none;">
+                                        <label for="siswa_id">Pilih Siswa:</label>
+                                        <select class="form-control" id="siswa_id" name="siswa_id">
+                                            <option value="">Pilih Siswa</option>
+                                            <?php foreach ($siswa_list as $siswa): ?>
+                                                <option value="<?php echo $siswa['id_siswa']; ?>" data-uid="<?php echo $siswa['uid']; ?>" data-nama="<?php echo $siswa['nama_siswa']; ?>">
+                                                    <?php echo $siswa['nama_siswa']; ?> (NIS: <?php echo $siswa['nis']; ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="guru_select" style="display: none;">
+                                        <label for="guru_id">Pilih Guru:</label>
+                                        <select class="form-control" id="guru_id" name="guru_id">
+                                            <option value="">Pilih Guru</option>
+                                            <?php foreach ($guru_list as $guru): ?>
+                                                <option value="<?php echo $guru['id_guru']; ?>" data-uid="<?php echo $guru['uid']; ?>" data-nama="<?php echo $guru['nama_guru']; ?>">
+                                                    <?php echo $guru['nama_guru']; ?> (NIP: <?php echo $guru['nip']; ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <input type="hidden" id="user_id" name="user_id">
+                                    <input type="hidden" id="user_name" name="user_name">
+                                    <button type="submit" class="btn btn-primary">Tambah Pengguna</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sinkronisasi Pengguna -->
+                    <div class="col-lg-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Sinkronisasi Pengguna</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="">
+                                    <input type="hidden" name="action" value="sync_users">
+                                    <div class="form-group">
+                                        <label for="sync_device_ip">Device Fingerprint:</label>
+                                        <select class="form-control" id="sync_device_ip" name="device_ip" required>
+                                            <?php foreach ($device_list as $dev): ?>
+                                                <option value="<?= htmlspecialchars($dev['ip']) ?>" <?php if (isset($_POST['device_ip']) && $_POST['device_ip'] == $dev['ip']) echo 'selected'; ?>>
+                                                    <?= htmlspecialchars($dev['nama_lokasi']) ?> (<?= htmlspecialchars($dev['ip']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Sinkronisasi Pengguna</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php include '../../templates/footer.php'; ?>
