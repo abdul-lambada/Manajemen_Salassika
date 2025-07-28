@@ -58,9 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $update_user->execute(array($nama_guru, $password, $user_id));
         } else {
             // UID belum ada, buat user baru
-            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
-            $stmt_user->execute(array($nama_guru, $password, $uid));
-            $user_id = $conn->lastInsertId();
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
+        $stmt_user->execute(array($nama_guru, $password, $uid));
+        $user_id = $conn->lastInsertId();
         }
         // Cek apakah user_id sudah termapping ke guru lain
         $check_map = $conn->prepare("SELECT id_guru FROM guru WHERE user_id = ?");

@@ -20,6 +20,22 @@ if (!in_array($role, ['admin', 'guru'])) {
 include __DIR__ . '/../templates/header.php';
 include __DIR__ . '/../templates/sidebar.php';
 
+// Tambahan: endpoint AJAX untuk polling fingerprint terbaru
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'fingerprint_status') {
+    include __DIR__ . '/../includes/db.php';
+    $today = date('Y-m-d');
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tbl_kehadiran WHERE DATE(timestamp) = ?");
+    $stmt->execute([$today]);
+    $total_fp = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    // Dummy: status device online jika ada fingerprint hari ini
+    $device_status = $total_fp > 0 ? 'Online' : 'Offline';
+    echo json_encode([
+        'total_fp' => $total_fp,
+        'device_status' => $device_status
+    ]);
+    exit;
+}
+
 // Ambil data statistik sesuai role
 if ($role === 'admin') {
     // Statistik untuk admin
@@ -231,6 +247,23 @@ if ($role === 'admin') {
                             </div>
                         </div>
                     </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Device Fingerprint</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="device-status">Offline</div>
+                                        <span id="badge-fingerprint" class="badge bg-secondary">Tidak Ada Absen</span>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-fingerprint fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 <?php endif; ?>
             </div>
 
@@ -317,6 +350,18 @@ var absensiChart = new Chart(ctx, {
         }
     }
 });
+</script>
+<script>
+// Polling fingerprint status setiap 10 detik
+setInterval(function() {
+    fetch('index.php?ajax=fingerprint_status')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('device-status').textContent = data.device_status;
+            document.getElementById('badge-fingerprint').textContent = data.total_fp > 0 ? 'Ada Absen Baru' : 'Tidak Ada Absen';
+            document.getElementById('badge-fingerprint').className = data.total_fp > 0 ? 'badge bg-success' : 'badge bg-secondary';
+        });
+}, 10000);
 </script>
 <?php endif; ?>
 

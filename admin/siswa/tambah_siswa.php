@@ -66,8 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             // UID belum ada, buat user baru dengan role pendaftar
             $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'pendaftar', ?)");
-            $stmt_user->execute(array($nama_siswa, $password, $uid));
-            $user_id = $conn->lastInsertId();
+        $stmt_user->execute(array($nama_siswa, $password, $uid));
+        $user_id = $conn->lastInsertId();
         }
         // Cek apakah user_id sudah termapping ke siswa lain
         $check_map = $conn->prepare("SELECT id_siswa FROM siswa WHERE user_id = ?");

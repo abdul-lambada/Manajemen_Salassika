@@ -22,42 +22,52 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_absensi'])) {
         $tanggal = date('Y-m-d');
         $id_kelas = $_POST['id_kelas'];
-
-        // Proses simpan absensi
+        $error = false;
         foreach ($_POST['status'] as $id_siswa => $status_kehadiran) {
-            $stmt_check = $conn->prepare("SELECT * FROM absensi_siswa WHERE id_siswa = :id_siswa AND tanggal = :tanggal");
-            $stmt_check->bindParam(':id_siswa', $id_siswa);
-            $stmt_check->bindParam(':tanggal', $tanggal);
-            $stmt_check->execute();
+            // Cek apakah fingerprint sudah ada untuk siswa ini hari ini
+            $stmt_fp = $conn->prepare("SELECT kh.timestamp FROM siswa s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN tbl_kehadiran kh ON u.id = kh.user_id AND DATE(kh.timestamp) = ? WHERE s.id_siswa = ? LIMIT 1");
+            $stmt_fp->execute([$tanggal, $id_siswa]);
+            $fingerprint = $stmt_fp->fetch(PDO::FETCH_ASSOC);
+            if ($fingerprint && $fingerprint['timestamp']) {
+                // Jika fingerprint sudah ada, abaikan input manual
+                continue;
+            }
 
             $catatan = htmlspecialchars($_POST['catatan'][$id_siswa]);
 
-            if ($stmt_check->rowCount() > 0) {
-                $stmt_update = $conn->prepare("
-                    UPDATE absensi_siswa 
-                    SET status_kehadiran = :status_kehadiran, catatan = :catatan 
-                    WHERE id_siswa = :id_siswa AND tanggal = :tanggal
-                ");
-                $stmt_update->bindParam(':id_siswa', $id_siswa);
-                $stmt_update->bindParam(':tanggal', $tanggal);
-                $stmt_update->bindParam(':status_kehadiran', $status_kehadiran);
-                $stmt_update->bindParam(':catatan', $catatan);
-                $stmt_update->execute();
-            } else {
-                $stmt_insert = $conn->prepare("
-                    INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, catatan)
-                    VALUES (:id_siswa, :tanggal, :status_kehadiran, :catatan)
-                ");
-                $stmt_insert->bindParam(':id_siswa', $id_siswa);
-                $stmt_insert->bindParam(':tanggal', $tanggal);
-                $stmt_insert->bindParam(':status_kehadiran', $status_kehadiran);
-                $stmt_insert->bindParam(':catatan', $catatan);
-                $stmt_insert->execute();
+            try {
+                if ($stmt_check->rowCount() > 0) {
+                    $stmt_update = $conn->prepare("
+                        UPDATE absensi_siswa 
+                        SET status_kehadiran = :status_kehadiran, catatan = :catatan 
+                        WHERE id_siswa = :id_siswa AND tanggal = :tanggal
+                    ");
+                    $stmt_update->bindParam(':id_siswa', $id_siswa);
+                    $stmt_update->bindParam(':tanggal', $tanggal);
+                    $stmt_update->bindParam(':status_kehadiran', $status_kehadiran);
+                    $stmt_update->bindParam(':catatan', $catatan);
+                    $stmt_update->execute();
+                } else {
+                    $stmt_insert = $conn->prepare("
+                        INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, catatan)
+                        VALUES (:id_siswa, :tanggal, :status_kehadiran, :catatan)
+                    ");
+                    $stmt_insert->bindParam(':id_siswa', $id_siswa);
+                    $stmt_insert->bindParam(':tanggal', $tanggal);
+                    $stmt_insert->bindParam(':status_kehadiran', $status_kehadiran);
+                    $stmt_insert->bindParam(':catatan', $catatan);
+                    $stmt_insert->execute();
+                }
+            } catch (PDOException $e) {
+                $error = true;
             }
         }
 
-        // Set pesan sukses
-        $message = 'Absensi berhasil disimpan.';
+        if ($error) {
+            $message = 'Terjadi kesalahan saat menyimpan absensi. Silakan coba lagi.';
+        } else {
+            $message = 'Absensi berhasil disimpan.';
+        }
     }
 
     // Jika kelas dipilih melalui GET
@@ -97,6 +107,30 @@ try {
         $stmt_siswa_null->bindParam(':id_kelas', $id_kelas);
         $stmt_siswa_null->execute();
         $siswa_null_list = $stmt_siswa_null->fetchAll(PDO::FETCH_ASSOC);
+
+        // --- Tambahan: Proses fingerprint otomatis ke absensi_siswa ---
+        $jam_kerja_stmt = $conn->query("SELECT * FROM tbl_jam_kerja WHERE id = 1");
+        $jam_kerja = $jam_kerja_stmt->fetch(PDO::FETCH_ASSOC);
+        $jam_masuk = $jam_kerja ? $jam_kerja['jam_masuk'] : '06:30:00';
+        $toleransi = $jam_kerja ? (int)$jam_kerja['toleransi_telat_menit'] : 5;
+        $tanggal = date('Y-m-d');
+        foreach ($siswa_list as $siswa) {
+            if ($siswa['waktu_fingerprint'] && !$siswa['status_manual']) {
+                // Hitung status otomatis
+                $jam_masuk_full = $tanggal . ' ' . $jam_masuk;
+                $batas_telat = strtotime($jam_masuk_full) + ($toleransi * 60);
+                $waktu_fp = strtotime($siswa['waktu_fingerprint']);
+                $auto_status = ($waktu_fp <= $batas_telat) ? 'Hadir' : 'Telat';
+                // Simpan otomatis ke absensi_siswa jika belum ada
+                $stmt_check = $conn->prepare("SELECT 1 FROM absensi_siswa WHERE id_siswa = ? AND tanggal = ?");
+                $stmt_check->execute([$siswa['id_siswa'], $tanggal]);
+                if (!$stmt_check->fetchColumn()) {
+                    $stmt_insert = $conn->prepare("INSERT INTO absensi_siswa (id_siswa, tanggal, status_kehadiran, catatan) VALUES (?, ?, ?, ?)");
+                    $stmt_insert->execute([$siswa['id_siswa'], $tanggal, $auto_status, 'Fingerprint']);
+                }
+            }
+        }
+        // --- END Tambahan ---
     }
 
     // Ambil parameter filter dan pagination
@@ -393,7 +427,7 @@ try {
                                             <?php foreach ($siswa_list as $siswa): ?>
                                                 <tr>
                                                     <td>
-                                                        <strong><?php echo htmlspecialchars(isset($siswa['nama_siswa']) ? $siswa['nama_siswa'] : 'Tidak ada nama'); ?></strong>
+                                                        <strong><?php echo htmlspecialchars($siswa['nama_siswa']); ?></strong>
                                                         <br>
                                                         <small class="text-muted"><?php echo htmlspecialchars($siswa['jenis_kelamin']); ?></small>
                                                     </td>
@@ -542,6 +576,31 @@ try {
         </div>
         <?php include __DIR__ . '/../templates/footer.php'; ?>
     </div>
+    <div id="badge-fingerprint" class="badge badge-warning mb-2" style="display:none;">Ada Absen Fingerprint Baru!</div>
+    <script>
+// Polling AJAX fingerprint baru
+setInterval(function() {
+    fetch('?ajax=fingerprint_status')
+        .then(res => res.json())
+        .then(data => {
+            if (window.last_fp_count !== undefined && data.total_fp > window.last_fp_count) {
+                document.getElementById('badge-fingerprint').style.display = 'inline-block';
+            }
+            window.last_fp_count = data.total_fp;
+        });
+}, 10000);
+</script>
+<script>
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        var btn = this.querySelector('button[type=submit]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
+        }
+    });
+});
+</script>
 </body>
 
 </html>
