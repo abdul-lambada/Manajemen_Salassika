@@ -174,7 +174,7 @@ include '../../templates/sidebar.php';
                         </div>
                         <div class="form-group">
                             <label>Nomor WhatsApp:</label>
-                            <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($siswa['phone']); ?>" required>
+                            <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($siswa['phone']); ?>" placeholder="Contoh: 08123456789">
                         </div>
                         <div class="form-group">
                             <label>NIS</label>
@@ -195,7 +195,7 @@ include '../../templates/sidebar.php';
                         </div>
                         <div class="form-group">
                             <label>Alamat</label>
-                            <textarea name="alamat" class="form-control" required><?= htmlspecialchars($siswa['alamat']) ?></textarea>
+                            <textarea name="alamat" class="form-control" required><?php echo htmlspecialchars($siswa['alamat']); ?></textarea>
                         </div>
                         <div class="form-group">
                             <label>Kelas</label>

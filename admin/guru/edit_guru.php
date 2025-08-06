@@ -153,8 +153,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <label>Alamat:</label>
                                     <textarea name="alamat" class="form-control" required><?php echo htmlspecialchars($guru['alamat']); ?></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-success">Simpan</button>
-                                <a href="list_guru.php" class="btn btn-secondary">Batal</a>
+                                <div class="form-group">
+                                    <label>Nomor WhatsApp:</label>
+                                    <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($user['phone']); ?>" placeholder="Contoh: 08123456789">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Simpan</button>
+                                <a href="list_guru.php" class="btn btn-secondary">Kembali</a>
                             </form>
                         </div>
                     </div>

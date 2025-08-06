@@ -199,8 +199,14 @@ include '../../templates/sidebar.php';
                         
                         <div class="form-group">
                             <label>Alamat</label>
-                            <textarea name="alamat" class="form-control" rows="3" required><?= isset($_POST['alamat']) ? htmlspecialchars($_POST['alamat']) : '' ?></textarea>
+                            <textarea name="alamat" class="form-control" required></textarea>
                         </div>
+                        <div class="form-group">
+                            <label>Nomor WhatsApp:</label>
+                            <input type="text" name="phone" class="form-control" placeholder="Contoh: 08123456789">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <a href="list_siswa.php" class="btn btn-secondary">Kembali</a>
                         
                         <div class="form-group">
                             <label>Kelas</label>

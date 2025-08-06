@@ -74,9 +74,9 @@ include '../templates/sidebar.php';
 
         </div>
     </div>
-    <?php include '../templates/footer.php'; ?>
+    <?php include __DIR__ . '/../templates/footer.php'; ?>
 </div>
 
-<?php include '../templates/scripts.php'; ?>
+<?php include __DIR__ . '/../templates/scripts.php'; ?>
 </body>
 </html> 

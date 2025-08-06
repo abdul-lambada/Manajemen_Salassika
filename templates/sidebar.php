@@ -53,6 +53,14 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
     $active_page = 'jalankan_sinkronisasi';
 } elseif (preg_match('#/admin/optimize_database\.php$#', $script)) {
     $active_page = 'optimize_database';
+} elseif (preg_match('#/admin/whatsapp/config\.php$#', $script)) {
+    $active_page = 'whatsapp_config';
+} elseif (preg_match('#/admin/whatsapp/monitoring\.php$#', $script)) {
+    $active_page = 'whatsapp_monitoring';
+} elseif (preg_match('#/admin/whatsapp/templates\.php$#', $script)) {
+    $active_page = 'whatsapp_templates';
+} elseif (preg_match('#/admin/whatsapp/test\.php$#', $script)) {
+    $active_page = 'whatsapp_test';
 } elseif (preg_match('#/profil\.php$#', $script)) {
     $active_page = 'profil';
 } elseif (preg_match('#/guru/absensi_guru\.php$#', $script)) {
@@ -120,6 +128,27 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
         </li>
         <hr class="sidebar-divider">
         <div class="sidebar-heading">Fitur</div>
+
+        <?php
+        $whatsapp_pages = array('whatsapp_config', 'whatsapp_monitoring', 'whatsapp_templates', 'whatsapp_test', 'whatsapp_test_service');
+        $is_whatsapp_active = in_array($active_page, $whatsapp_pages);
+        ?>
+        <li class="nav-item <?php echo $is_whatsapp_active ? 'active' : ''; ?>">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseWhatsApp"
+               aria-expanded="<?php echo $is_whatsapp_active ? 'true' : 'false'; ?>" aria-controls="collapseWhatsApp">
+                <i class="fab fa-whatsapp"></i>
+                <span>WhatsApp</span>
+            </a>
+            <div id="collapseWhatsApp" class="collapse <?php echo $is_whatsapp_active ? 'show' : ''; ?>" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_config') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/config.php"><i class="fas fa-cog mr-2 text-gray-400"></i>Konfigurasi</a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_monitoring') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/monitoring.php"><i class="fas fa-desktop mr-2 text-gray-400"></i>Monitoring</a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_templates') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/templates.php"><i class="fas fa-file-alt mr-2 text-gray-400"></i>Template Pesan</a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test.php"><i class="fas fa-vial mr-2 text-gray-400"></i>Test Koneksi</a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test_service') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test_service.php"><i class="fas fa-tools mr-2 text-gray-400"></i>Test Service</a>
+                </div>
+            </div>
+        </li>
 
         <?php
         $laporan_pages = array('laporan_absensi','laporan_siswa','laporan_guru');

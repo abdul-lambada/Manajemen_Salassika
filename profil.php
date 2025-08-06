@@ -63,12 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-include './templates/header.php';
-include './templates/sidebar.php';
+include __DIR__ . '/templates/header.php';
+include __DIR__ . '/templates/sidebar.php';
 ?>
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-        <?php include './templates/navbar.php'; ?>
+        <?php include __DIR__ . '/templates/navbar.php'; ?>
         <div class="container-fluid">
             <div class="row justify-content-center">
                 <div class="col-lg-12">
@@ -114,10 +114,10 @@ include './templates/sidebar.php';
             </div>
         </div>
     </div>
-    <?php include './templates/footer.php'; ?>
+    <?php include __DIR__ . '/templates/footer.php'; ?>
 </div>
 
-<?php include './templates/scripts.php'; ?>
+<?php include __DIR__ . '/templates/scripts.php'; ?>
 
 </body>
 </html> 

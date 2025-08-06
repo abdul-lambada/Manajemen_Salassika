@@ -155,14 +155,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                                 <div class="form-group">
                                     <label>Alamat:</label>
-                                    <textarea name="alamat" class="form-control" rows="3" required></textarea>
+                                    <textarea name="alamat" class="form-control" required></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Nomor WhatsApp:</label>
-                                    <input type="text" name="phone" class="form-control" required>
+                                    <input type="text" name="phone" class="form-control" placeholder="Contoh: 08123456789">
                                 </div>
-                                <button type="submit" class="btn btn-success">Simpan</button>
-                                <a href="list_guru.php" class="btn btn-secondary">Batal</a>
+                                <button type="submit" class="btn btn-primary">Simpan</button>
+                                <a href="list_guru.php" class="btn btn-secondary">Kembali</a>
                             </form>
                         </div>
                     </div>
