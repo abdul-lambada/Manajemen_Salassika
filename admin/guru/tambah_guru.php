@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $jenis_kelamin = $_POST['jenis_kelamin'];
         $tanggal_lahir = $_POST['tanggal_lahir'];
         $alamat = $_POST['alamat'];
+        $phone = $_POST['phone']; // Tambahkan input Nomor WhatsApp
         // Validasi NIP unik
         $check_nip = $conn->prepare("SELECT id_guru FROM guru WHERE nip = ?");
         $check_nip->execute(array($nip));
@@ -58,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $update_user->execute(array($nama_guru, $password, $user_id));
         } else {
             // UID belum ada, buat user baru
-        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'guru', ?)");
-        $stmt_user->execute(array($nama_guru, $password, $uid));
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid, phone) VALUES (?, ?, 'guru', ?, ?)");
+        $stmt_user->execute(array($nama_guru, $password, $uid, $phone));
         $user_id = $conn->lastInsertId();
         }
         // Cek apakah user_id sudah termapping ke guru lain
@@ -155,6 +156,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <div class="form-group">
                                     <label>Alamat:</label>
                                     <textarea name="alamat" class="form-control" rows="3" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nomor WhatsApp:</label>
+                                    <input type="text" name="phone" class="form-control" required>
                                 </div>
                                 <button type="submit" class="btn btn-success">Simpan</button>
                                 <a href="list_guru.php" class="btn btn-secondary">Batal</a>

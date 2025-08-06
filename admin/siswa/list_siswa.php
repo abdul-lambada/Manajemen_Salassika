@@ -1,11 +1,56 @@
 <?php
+include '../../includes/db.php';
+if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
+    require_once '../../vendor/autoload.php';
+    require_once '../../vendor/phpoffice/phpexcel/Classes/PHPExcel/IOFactory.php';
+    $file = $_FILES['excel_file']['tmp_name'];
+    $spreadsheet = PHPExcel_IOFactory::load($file);
+    $sheet = $spreadsheet->getActiveSheet();
+    $rows = $sheet->toArray();
+    $header = array_map('strtolower', $rows[0]);
+    $success = 0; $fail = 0; $fail_msg = [];
+    for ($i = 1; $i < count($rows); $i++) {
+        $row = array_combine($header, $rows[$i]);
+        if (empty($row['nis']) || empty($row['nama siswa'])) continue;
+        $nis = $row['nis'];
+        $stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
+        $stmt->execute([$nis]);
+        if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah ada di siswa"; continue; }
+        $stmt_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
+        $stmt_uid->execute([$nis]);
+        if ($stmt_uid->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah digunakan user lain"; continue; }
+        $password = password_hash('123456', PASSWORD_DEFAULT);
+        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', NULL)");
+        $stmt_user->execute([$row['nama siswa'], $password]);
+        $user_id = $conn->lastInsertId();
+        $tanggal_lahir = '';
+        if (isset($row['tanggal lahir']) && !empty($row['tanggal lahir'])) {
+            $tanggal_lahir = $row['tanggal lahir'];
+        }
+        $stmt_siswa = $conn->prepare("INSERT INTO siswa (nama_siswa, nisn, nis, jenis_kelamin, tanggal_lahir, alamat, id_kelas, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt_siswa->execute([
+            $row['nama siswa'],
+            isset($row['nisn']) ? $row['nisn'] : '',
+            $nis,
+            isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
+            $tanggal_lahir,
+            isset($row['alamat']) ? $row['alamat'] : '',
+            isset($row['id_kelas']) ? $row['id_kelas'] : 1,
+            $user_id
+        ]);
+        $success++;
+    }
+    $status = ($fail > 0) ? 'import_warning' : 'import_success';
+    $msg = "Import selesai. Berhasil: $success, Gagal: $fail" . ($fail ? (" (".implode(", ", $fail_msg).")") : '');
+    header("Location: list_siswa.php?status=$status&msg=" . urlencode($msg));
+    exit();
+}
 use PhpOffice\PhpSpreadsheet\IOFactory;
 $title = "List Siswa";
 $active_page = "list_siswa";
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 // include '../../templates/navbar.php';
-include '../../includes/db.php';
 
 // Konfigurasi pagination
 $limit = 10;
@@ -68,58 +113,10 @@ switch ($status) {
         break;
 }
 
-// Proses import Excel jika ada upload
-if (isset($_POST['import_excel']) && isset($_FILES['excel_file'])) {
-    require_once '../../vendor/autoload.php';
-    require_once '../../vendor/phpoffice/phpexcel/Classes/PHPExcel/IOFactory.php';
-    $file = $_FILES['excel_file']['tmp_name'];
-    $spreadsheet = PHPExcel_IOFactory::load($file);
-    $sheet = $spreadsheet->getActiveSheet();
-    $rows = $sheet->toArray();
-    $header = array_map('strtolower', $rows[0]);
-    $success = 0; $fail = 0; $fail_msg = [];
-    for ($i = 1; $i < count($rows); $i++) {
-        $row = array_combine($header, $rows[$i]);
-        if (empty($row['nis']) || empty($row['nama siswa'])) continue;
-        // Validasi NIS unik di siswa
-        $nis = $row['nis'];
-        $stmt = $conn->prepare("SELECT id_siswa FROM siswa WHERE nis = ?");
-        $stmt->execute([$nis]);
-        if ($stmt->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah ada di siswa"; continue; }
-        // Validasi UID unik di users
-        $stmt_uid = $conn->prepare("SELECT id FROM users WHERE uid = ?");
-        $stmt_uid->execute([$nis]);
-        if ($stmt_uid->rowCount() > 0) { $fail++; $fail_msg[] = "NIS $nis sudah digunakan user lain"; continue; }
-        // Insert ke users
-        $password = password_hash('123456', PASSWORD_DEFAULT);
-        $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'siswa', NULL)");
-        $stmt_user->execute([$row['nama siswa'], $password]);
-        $user_id = $conn->lastInsertId();
-        // Ambil tanggal lahir dengan fallback
-        $tanggal_lahir = '';
-        if (isset($row['tanggal lahir']) && !empty($row['tanggal lahir'])) {
-            $tanggal_lahir = $row['tanggal lahir'];
-        } elseif (isset($row['tanggal_lahir']) && !empty($row['tanggal_lahir'])) {
-            $tanggal_lahir = $row['tanggal_lahir'];
-        } else {
-            $tanggal_lahir = '2000-01-01'; // default jika kosong
-        }
-        // Insert ke siswa
-        $stmt_siswa = $conn->prepare("INSERT INTO siswa (nama_siswa, nis, nisn, jenis_kelamin, tanggal_lahir, alamat, user_id, id_kelas) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt_siswa->execute([
-            $row['nama siswa'],
-            $nis,
-            isset($row['nisn']) ? $row['nisn'] : '',
-            isset($row['jenis kelamin']) ? $row['jenis kelamin'] : '',
-            $tanggal_lahir,
-            isset($row['alamat']) ? $row['alamat'] : '',
-            $user_id,
-            isset($row['id_kelas']) ? $row['id_kelas'] : null
-        ]);
-        $success++;
-    }
-    $message = "Import selesai. Berhasil: $success, Gagal: $fail" . ($fail ? (" (".implode(", ", $fail_msg).")") : '');
-    $alert_class = $fail ? 'alert-warning' : 'alert-success';
+// Tampilkan pesan dari GET jika ada
+if (isset($_GET['msg'])) {
+    $message = $_GET['msg'];
+    $alert_class = (isset($_GET['status']) && $_GET['status'] === 'import_warning') ? 'alert-warning' : 'alert-success';
 }
 ?>
 

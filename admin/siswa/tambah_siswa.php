@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $alamat = $_POST['alamat'];
         $id_kelas = $_POST['id_kelas'];
         $nis = $_POST['nis'];
+        $phone = $_POST['phone']; // Tambahkan input Nomor WhatsApp
         // Validasi NISN unik
         $check_nisn = $conn->prepare("SELECT id_siswa FROM siswa WHERE nisn = ?");
         $check_nisn->execute(array($nisn));
@@ -65,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $update_user->execute(array($nama_siswa, $password, $user_id));
         } else {
             // UID belum ada, buat user baru dengan role pendaftar
-            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid) VALUES (?, ?, 'pendaftar', ?)");
-        $stmt_user->execute(array($nama_siswa, $password, $uid));
-        $user_id = $conn->lastInsertId();
+            $stmt_user = $conn->prepare("INSERT INTO users (name, password, role, uid, phone) VALUES (?, ?, 'pendaftar', ?, ?)");
+            $stmt_user->execute(array($nama_siswa, $password, $uid, $phone));
+            $user_id = $conn->lastInsertId();
         }
         // Cek apakah user_id sudah termapping ke siswa lain
         $check_map = $conn->prepare("SELECT id_siswa FROM siswa WHERE user_id = ?");
@@ -173,6 +174,11 @@ include '../../templates/sidebar.php';
                             <input type="text" name="nis" class="form-control" 
                                    value="<?= isset($_POST['nis']) ? htmlspecialchars($_POST['nis']) : '' ?>" 
                                    required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nomor WhatsApp:</label>
+                            <input type="text" name="phone" class="form-control" required>
                         </div>
                         
                         <div class="form-group">

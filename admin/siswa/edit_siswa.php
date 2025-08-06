@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ]);
 
         // Update data di tabel users
-        $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ? WHERE id = ?");
-        $stmt_user->execute([$nama_siswa, $password, $uid, $siswa['user_id']]);
+        $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ?, phone = ? WHERE id = ?");
+        $stmt_user->execute([$nama_siswa, $password, $uid, $_POST['phone'], $siswa['user_id']]);
 
         $conn->commit();
         header("Location: list_siswa.php?status=edit_success");
@@ -171,6 +171,10 @@ include '../../templates/sidebar.php';
                         <div class="form-group">
                             <label>Password Baru (kosongkan jika tidak ingin diubah)</label>
                             <input type="password" name="password" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Nomor WhatsApp:</label>
+                            <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($siswa['phone']); ?>" required>
                         </div>
                         <div class="form-group">
                             <label>NIS</label>

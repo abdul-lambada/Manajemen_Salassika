@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $conn->prepare("UPDATE guru SET nip = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id_guru = ?");
         $stmt->execute([$nip, $jenis_kelamin, $tanggal_lahir, $alamat, $id_guru]);
         // Update data di tabel users
-        $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ? WHERE id = ?");
-        $stmt_user->execute([$nama_guru, $password, $uid, $user['id']]);
+        $stmt_user = $conn->prepare("UPDATE users SET name = ?, password = ?, uid = ?, phone = ? WHERE id = ?");
+        $stmt_user->execute([$nama_guru, $password, $uid, $_POST['phone'], $user['id']]);
         $conn->commit();
         header("Location: list_guru.php?status=edit_success");
         exit();
@@ -133,6 +133,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <div class="form-group">
                                     <label>Password (kosongkan jika tidak ingin diubah):</label>
                                     <input type="password" name="password" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nomor WhatsApp:</label>
+                                    <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($user['phone']); ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Jenis Kelamin:</label>

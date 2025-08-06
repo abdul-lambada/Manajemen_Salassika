@@ -19,6 +19,25 @@ if (!in_array($role, ['admin', 'guru'])) {
 
 include __DIR__ . '/../templates/header.php';
 include __DIR__ . '/../templates/sidebar.php';
+
+// Monitoring status sinkronisasi fingerprint
+$log_file = __DIR__ . '/../logs/cron_sync.log';
+$last_sync_time = '-';
+$last_sync_status = '-';
+$last_sync_msg = '-';
+if (file_exists($log_file)) {
+    $lines = file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    for ($i = count($lines) - 1; $i >= 0; $i--) {
+        if (strpos($lines[$i], 'Berhasil menyimpan') !== false || strpos($lines[$i], 'Proses sinkronisasi selesai') !== false || strpos($lines[$i], 'ERROR') !== false) {
+            if (preg_match('/\[(.*?)\] \[(.*?)\] - (.*)/', $lines[$i], $m)) {
+                $last_sync_time = $m[1];
+                $last_sync_status = $m[2];
+                $last_sync_msg = $m[3];
+            }
+            break;
+        }
+    }
+}
 ?>
 
 <div id="content-wrapper" class="d-flex flex-column">
@@ -128,6 +147,24 @@ include __DIR__ . '/../templates/sidebar.php';
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-fingerprint fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Status Sinkronisasi Fingerprint</div>
+                                        <div class="h6 mb-0 font-weight-bold text-gray-800">Terakhir: <?= htmlspecialchars($last_sync_time) ?></div>
+                                        <div class="small mb-0">Status: <span class="badge badge-<?= strtolower($last_sync_status) === 'success' ? 'success' : (strtolower($last_sync_status) === 'error' ? 'danger' : 'secondary') ?>"><?= htmlspecialchars($last_sync_status) ?></span></div>
+                                        <div class="small text-muted">Pesan: <?= htmlspecialchars($last_sync_msg) ?></div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
                                     </div>
                                 </div>
                             </div>
