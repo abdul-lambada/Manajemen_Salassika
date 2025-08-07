@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../../includes/db.php';
+include '../../includes/advanced_stats_helper.php';
 
 if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['admin', 'guru'])) {
     header("Location: ../auth/login.php");

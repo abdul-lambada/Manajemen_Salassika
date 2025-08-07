@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../../includes/db.php';
+include '../../includes/advanced_stats_helper.php';
 
 if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['admin', 'guru'])) {
     header("Location: ../auth/login.php");
@@ -128,6 +129,36 @@ include '../../templates/sidebar.php';
                 <div class="alert alert-danger">
                     <?= htmlspecialchars($error_message) ?>
                 </div>
+            <?php endif; ?>
+
+            <!-- Advanced Analytics Charts -->
+            <?php if (isset($stats) && $stats['total_user'] > 0): ?>
+            <div class="row mb-4">
+                <div class="col-xl-8 col-lg-7">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Trend Kehadiran</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="attendanceTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-lg-5">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Status Kehadiran</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="statusPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <?php endif; ?>
 
             <!-- Filter Form -->
@@ -362,6 +393,55 @@ include '../../templates/sidebar.php';
 </div>
 
 <?php include '../../templates/scripts.php'; ?>
+
+<!-- Chart.js -->
+<script src="/absensi_sekolah/assets/vendor/chart.js/Chart.min.js"></script>
+
+<script>
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Status Pie Chart Data
+    const statusData = {
+        labels: ['Hadir', 'Telat', 'Izin/Sakit', 'Alfa'],
+        datasets: [{
+            data: [<?= $stats['total_hadir'] ?>, <?= $stats['total_telat'] ?>, <?= $stats['total_izin_sakit'] ?>, <?= $stats['total_alfa'] ?>],
+            backgroundColor: ['#1cc88a', '#f6c23e', '#36b9cc', '#e74a3b'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
+    
+    // Create Status Pie Chart
+    const statusCtx = document.getElementById('statusPieChart');
+    if (statusCtx) {
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: statusData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: window.innerWidth < 768 ? 'bottom' : 'right'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Sample trend data (you can enhance this with real monthly data)
+    const trendData = {
+        labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+        attendance_rates: [85, 88, 92, 87]
+    };
+    
+    // Create Attendance Trend Chart
+    const trendCtx = document.getElementById('attendanceTrendChart');
+    if (trendCtx && window.enhancedCharts) {
+        window.enhancedCharts.createAttendanceTrendChart('attendanceTrendChart', trendData);
+    }
+});
+</script>
 
 </body>
 </html> 
