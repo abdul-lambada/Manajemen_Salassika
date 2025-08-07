@@ -130,8 +130,40 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
         <div class="sidebar-heading">Fitur</div>
 
         <?php
-        $whatsapp_pages = array('whatsapp_config', 'whatsapp_monitoring', 'whatsapp_templates', 'whatsapp_test', 'whatsapp_test_service');
-        $is_whatsapp_active = in_array($active_page, $whatsapp_pages);
+        $whatsapp_pages = array(
+            'whatsapp_config',
+            'whatsapp_monitoring', 
+            'whatsapp_templates',
+            'whatsapp_test',
+            'whatsapp_test_service',
+            'whatsapp_automation',
+            'whatsapp_automation_logs'
+        );
+        
+        // Ensure $active_page is defined
+        if (!isset($active_page)) {
+            $active_page = '';
+        }
+        
+        // Check if current page is WhatsApp related
+        $is_whatsapp_active = false;
+        
+        // Method 1: Check active_page array
+        if (in_array($active_page, $whatsapp_pages)) {
+            $is_whatsapp_active = true;
+        }
+        
+        // Method 2: Check script path
+        if (isset($script) && strpos($script, '/admin/whatsapp/') !== false) {
+            $is_whatsapp_active = true;
+        }
+        
+        // Method 3: Check current URL path as fallback
+        if (!$is_whatsapp_active && isset($_SERVER['REQUEST_URI'])) {
+            if (strpos($_SERVER['REQUEST_URI'], '/admin/whatsapp/') !== false) {
+                $is_whatsapp_active = true;
+            }
+        }
         ?>
         <li class="nav-item <?php echo $is_whatsapp_active ? 'active' : ''; ?>">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseWhatsApp"
@@ -141,11 +173,27 @@ if (preg_match('#/admin/index\.php$#', $script) || preg_match('#/guru/index\.php
             </a>
             <div id="collapseWhatsApp" class="collapse <?php echo $is_whatsapp_active ? 'show' : ''; ?>" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_config') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/config.php"><i class="fas fa-cog mr-2 text-gray-400"></i>Konfigurasi</a>
-                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_monitoring') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/monitoring.php"><i class="fas fa-desktop mr-2 text-gray-400"></i>Monitoring</a>
-                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_templates') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/templates.php"><i class="fas fa-file-alt mr-2 text-gray-400"></i>Template Pesan</a>
-                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test.php"><i class="fas fa-vial mr-2 text-gray-400"></i>Test Koneksi</a>
-                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test_service') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test_service.php"><i class="fas fa-tools mr-2 text-gray-400"></i>Test Service</a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_config') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/config.php">
+                        <i class="fas fa-cog mr-2 text-gray-400"></i>Konfigurasi
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_monitoring') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/monitoring.php">
+                        <i class="fas fa-desktop mr-2 text-gray-400"></i>Monitoring
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_templates') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/templates.php">
+                        <i class="fas fa-file-alt mr-2 text-gray-400"></i>Template Pesan
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_automation') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/automation_settings.php">
+                        <i class="fas fa-robot mr-2 text-gray-400"></i>Otomatisasi
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_automation_logs') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/automation_logs.php">
+                        <i class="fas fa-history mr-2 text-gray-400"></i>Log Otomatisasi
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test.php">
+                        <i class="fas fa-vial mr-2 text-gray-400"></i>Test Koneksi
+                    </a>
+                    <a class="collapse-item <?php echo ($active_page === 'whatsapp_test_service') ? 'active' : ''; ?>" href="/absensi_sekolah/admin/whatsapp/test_service.php">
+                        <i class="fas fa-tools mr-2 text-gray-400"></i>Test Service
+                    </a>
                 </div>
             </div>
         </li>

@@ -5,7 +5,7 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 $title = "Test Koneksi WhatsApp";
-$active_page = "whatsapp";
+$active_page = "whatsapp_test";
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 

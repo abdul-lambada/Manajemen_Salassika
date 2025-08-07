@@ -5,7 +5,7 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 $title = "Template Pesan WhatsApp";
-$active_page = "whatsapp";
+$active_page = "whatsapp_templates";
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 

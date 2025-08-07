@@ -13,6 +13,7 @@ class WhatsAppService {
     
     private function loadConfig() {
         $sql = "SELECT * FROM whatsapp_config LIMIT 1";
+        if (!$this->conn) throw new Exception('Database connection is not set');
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) throw new Exception('Database error: ' . $this->conn->errorInfo()[2]);
         if (!$stmt->execute()) throw new Exception('Database error: ' . $stmt->errorInfo()[2]);
@@ -28,6 +29,33 @@ class WhatsAppService {
     
     public function getConfig() {
         return $this->config;
+    }
+    
+    /**
+     * Log automation event
+     */
+    public function logAutomationEvent($user_id, $user_type, $attendance_status, $notification_type, $recipient_phone, $recipient_type, $template_used = null, $message_sent = false, $error_message = null, $attendance_date = null) {
+        try {
+            $stmt = $this->conn->prepare("INSERT INTO whatsapp_automation_logs (user_id, user_type, attendance_status, notification_type, recipient_phone, recipient_type, template_used, message_sent, error_message, attendance_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            
+            $result = $stmt->execute([
+                $user_id,
+                $user_type,
+                $attendance_status,
+                $notification_type,
+                $recipient_phone,
+                $recipient_type,
+                $template_used,
+                $message_sent ? 1 : 0,
+                $error_message,
+                $attendance_date ?: date('Y-m-d')
+            ]);
+            
+            return $result ? $this->conn->lastInsertId() : false;
+        } catch (Exception $e) {
+            error_log("Automation log error: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**

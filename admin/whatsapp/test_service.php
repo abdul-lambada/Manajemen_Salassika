@@ -5,13 +5,13 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit;
 }
 
+$title = "Test WhatsApp Service";
+$active_page = "whatsapp_test_service";
+
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 include '../../includes/db.php';
 require_once __DIR__ . '/../../includes/wa_util.php';
-
-$title = "Test WhatsApp Service";
-$active_page = "whatsapp_test_service";
 
 // Initialize WhatsAppService
 $waService = new WhatsAppService($conn);

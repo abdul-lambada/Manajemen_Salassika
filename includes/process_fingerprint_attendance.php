@@ -3,6 +3,7 @@
 // untuk memproses data mentah dari mesin fingerprint.
 
 include __DIR__ . '/db.php';
+include __DIR__ . '/attendance_whatsapp_automation.php';
 
 function processFingerprintAttendance() {
     global $conn;
@@ -99,6 +100,23 @@ function processFingerprintAttendance() {
                          VALUES (?, ?, ?, ?, 'Absensi via Fingerprint')"
                     );
                     $stmt_insert->execute([$id_entitas, $tanggal_absensi, $waktu_absensi, $status_kehadiran]);
+
+                    // Update status kehadiran di tabel kehadiran
+                    $stmt_update = $conn->prepare("UPDATE tbl_kehadiran SET status_kehadiran = ?, timestamp = ? WHERE id = ? AND DATE(timestamp) = DATE(?)");
+                    $stmt_update->execute([$status_kehadiran, $timestamp, $data['id'], $timestamp]);
+
+                    // Kirim notifikasi WhatsApp otomatis jika ada pengaturan
+                    try {
+                        $automation = new AttendanceWhatsAppAutomation($conn);
+                        $automation->processAttendanceNotifications([
+                            'user_id' => $user_id,
+                            'status_kehadiran' => $status_kehadiran,
+                            'timestamp' => $timestamp,
+                            'user_type' => $user_info['role']
+                        ]);
+                    } catch (Exception $e) {
+                        error_log("WhatsApp automation error: " . $e->getMessage());
+                    }
                 }
             }
 

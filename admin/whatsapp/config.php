@@ -1,12 +1,13 @@
 <?php
 session_start();
+
+$title = "Konfigurasi WhatsApp";
+$active_page = "whatsapp_config";
+
 include '../../templates/header.php';
 include '../../templates/sidebar.php';
 include '../../includes/db.php';
 require_once __DIR__ . '/../../includes/wa_util.php';
-
-$title = "Konfigurasi WhatsApp";
-$active_page = "whatsapp_config";
 
 // Check if user is logged in and has admin role
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
