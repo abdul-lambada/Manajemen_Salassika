@@ -19,5 +19,5 @@ Options -Indexes
 # Prevent access to config files
 <Files "config.php">
     Order Allow,Deny
-    Deny from all
+    Allow from all
 </Files>
